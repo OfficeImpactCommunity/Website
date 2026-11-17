@@ -3,7 +3,7 @@ name: Deploy preview website
 on:
   push:
     branches:
-      - develop
+      - Develop
 
 permissions:
   contents: read
