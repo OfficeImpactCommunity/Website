@@ -1,0 +1,32 @@
+
+name: Deploy preview website
+
+on:
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-deployment
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout website
+        uses: actions/checkout@v4
+
+      - name: Deploy to preview repository
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.PREVIEW_DEPLOY_TOKEN }}
+          external_repository: OfficeImpactCommunity/Website-preview
+          publish_branch: gh-pages
+          publish_dir: .
+          exclude_assets: '.github,CNAME,.pages.yml,README.md,SECURITY.md'
+          force_orphan: true
