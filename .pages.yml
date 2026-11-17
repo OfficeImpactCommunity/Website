@@ -255,3 +255,16 @@ content:
       create: true
       rename: false
       delete: true
+
+      
+actions:
+  - name: publish-production
+    label: Publish to production
+    workflow: publish-production.yml
+    ref: Develop
+    cancelable: false
+    confirm:
+      title: Publish website?
+      message: This will publish the current Develop content to officeimpact.co.
+      button: Publish
+
