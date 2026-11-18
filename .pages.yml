@@ -440,7 +440,7 @@ content:
   # ==========================================================
 
   - name: people
-    label: People
+    label: Team
     type: file
     path: content/people.json
     format: json
