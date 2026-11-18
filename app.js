@@ -186,7 +186,20 @@ function entryPostTitle(entry) {
 }
 
 function firstContent(...values) {
-  return values.map(cleanText).find(Boolean) || "";
+  return values.map((value) => {
+    const raw = cleanText(value);
+    if (!raw) return "";
+
+    // Rich-text editors may save an empty field as <p></p> or <p><br></p>.
+    // Treat those placeholders as blank so the fallback can take effect.
+    const visibleText = raw
+      .replace(/&nbsp;|&#160;|&#xA0;/gi, " ")
+      .replace(/<br\s*\/?>/gi, "")
+      .replace(/<[^>]*>/g, "")
+      .trim();
+
+    return visibleText ? raw : "";
+  }).find(Boolean) || "";
 }
 
 // Shared event/story records can keep one description and one image.
@@ -206,7 +219,7 @@ function entryStoryBody(entry) {
 function entryEventBody(entry, past = false) {
   return past
     ? firstContent(entry.post_body, entry.event_details, entry.post_summary, entry.event_summary)
-    : firstContent(entry.event_details, entry.post_body, entry.event_summary, entry.post_summary);
+    : firstContent(entry.event_details, entry.event_summary, entry.post_body, entry.post_summary);
 }
 
 function entryStoryImage(entry, past = false) {
