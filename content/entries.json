@@ -66,17 +66,6 @@
       "featured_post": true,
       "source": "LinkedIn",
       "source_url": "https://lnkd.in/p/eAmtpy6u"
-    },
-    {
-      "kind": "story",
-      "id": "test001",
-      "published": true,
-      "title": "Test",
-      "publication_date": "2026-11-18",
-      "category": "Webinar",
-      "post_summary": "Test test",
-      "post_body": "<p></p>",
-      "featured_post": false
     }
   ]
 }
