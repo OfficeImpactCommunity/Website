@@ -340,7 +340,7 @@ content:
               - name: venue_image
                 label: Venue image
                 type: image
-                description: Optional image for an upcoming event. If blank, the story image is reused.
+                description: Preferred image for an upcoming event. If blank, the story image or event photo is reused.
                 options:
                   path: events
                   categories: [image]
@@ -350,7 +350,7 @@ content:
               - name: event_image
                 label: Event photo
                 type: image
-                description: Optional photo from the actual event. If blank, the story image is reused.
+                description: Preferred photo from the actual event. If blank, the story image or venue image is reused.
                 options:
                   path: events
                   categories: [image]
@@ -401,6 +401,7 @@ content:
               - name: post_body
                 label: Story / recap
                 type: rich-text
+                description: If blank, the event details are reused.
                 options:
                   format: html
                   media: false
@@ -409,6 +410,7 @@ content:
               - name: post_image
                 label: Story image
                 type: image
+                description: If blank, the venue image (upcoming event) or event photo (past event) is reused.
                 options:
                   path: stories
                   categories: [image]
