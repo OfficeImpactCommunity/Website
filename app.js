@@ -193,13 +193,40 @@ function entryPublicationDate(entry) {
   return cleanText(entry.publication_date) || cleanText(entry.event_date);
 }
 
+function entryKind(entry) {
+  const kind = cleanText(entry.kind);
+
+  if (
+    kind === "event" ||
+    kind === "story" ||
+    kind === "event_story"
+  ) {
+    return kind;
+  }
+
+  // Backwards compatibility with the old content model.
+  const inCalendar = isTrue(entry.show_in_calendar);
+  const inPosts = isTrue(entry.show_in_posts);
+
+  if (inCalendar && inPosts) return "event_story";
+  if (inCalendar) return "event";
+  return "story";
+}
+
 function entryShowsInPosts(entry) {
-  return isTrue(entry.show_in_posts);
+  const kind = entryKind(entry);
+  return kind === "story" || kind === "event_story";
 }
 
 function entryShowsInCalendar(entry) {
-  return isTrue(entry.show_in_calendar) && isDateString(entry.event_date);
+  const kind = entryKind(entry);
+
+  return (
+    (kind === "event" || kind === "event_story") &&
+    isDateString(entry.event_date)
+  );
 }
+
 
 function entryIsPublished(entry) {
   return !isFalse(entry.published);
@@ -240,14 +267,18 @@ async function loadJson(path) {
 
 async function init() {
   try {
-    const [entries, people] = await Promise.all([
+    const [entriesData, people] = await Promise.all([
       loadJson("./content/entries.json"),
       loadJson("./content/people.json"),
     ]);
 
-    state.entries = Array.isArray(entries)
-      ? entries.filter(entryIsPublished)
-      : [];
+    const entries = Array.isArray(entriesData)
+      ? entriesData
+      : Array.isArray(entriesData?.entries)
+        ? entriesData.entries
+        : [];
+
+    state.entries = entries.filter(entryIsPublished);
 
     state.people = Array.isArray(people)
       ? people.filter((item) => !isFalse(item.published))
