@@ -230,6 +230,30 @@ function entryEventImage(entry, past = false) {
     : firstContent(entry.venue_image, entry.post_image, entry.event_image);
 }
 
+function isOnlineEvent(entry) {
+  const location = cleanText(entry.event_location).toLowerCase();
+  const type = cleanText(entry.event_type).toLowerCase();
+
+  return /\b(online|virtual|remote|zoom|microsoft teams|google meet)\b/.test(location) ||
+    type === "online event";
+}
+
+function buildOnlineEventLine(entry, past, registrationUrl = "", includeMeta = false) {
+  const meta = includeMeta
+    ? [formatDate(entry.event_date), cleanText(entry.event_time)].filter(Boolean).join(" · ")
+    : "";
+  const registrationLink = !past && registrationUrl
+    ? `<a href="${escapeHtml(registrationUrl)}" target="_blank" rel="noopener noreferrer">Register here &nearr;</a>`
+    : "";
+
+  return `
+    <div class="dialog-online-line">
+      <strong>Online</strong>
+      ${meta ? `<span>${escapeHtml(meta)}</span>` : ""}
+      ${registrationLink}
+    </div>`;
+}
+
 function entryStoryImageAlt(entry, imageValue) {
   if (imageValue && cleanText(entry.post_image) === imageValue) {
     return firstContent(entry.post_image_alt) || entryPostTitle(entry);
@@ -777,6 +801,9 @@ function openPerson(index) {
 }
 
 function buildFutureLocationBlock(entry) {
+  // Online events need no physical venue panel, address card or map.
+  if (isOnlineEvent(entry)) return "";
+
   const venue = cleanText(entry.event_location);
   const address = cleanText(entry.address);
   const mapQuery = cleanText(entry.map_query) || address;
@@ -818,8 +845,12 @@ function buildFutureLocationBlock(entry) {
   return `<div class="event-location event-location--${count}">${panels.join("")}</div>`;
 }
 
-function buildEntryEventInfo(entry, past) {
+function buildEntryEventInfo(entry, past, registrationUrl = "") {
   if (!entryShowsInCalendar(entry)) return "";
+  if (isOnlineEvent(entry)) {
+    return buildOnlineEventLine(entry, past, registrationUrl, true);
+  }
+
   const meta = [formatDate(entry.event_date), cleanText(entry.event_time), cleanText(entry.event_location)].filter(Boolean).join(" · ");
   return `
     <div class="entry-event-info">
@@ -847,7 +878,11 @@ function openEntry(id, mode = "post") {
   const sourceUrl = safeExternalUrl(entry.source_url);
   const registrationUrl = safeExternalUrl(entry.registration_url);
   const eventMeta = hasEvent
-    ? [formatDate(entry.event_date), cleanText(entry.event_time), cleanText(entry.event_location)].filter(Boolean).join(" · ")
+    ? [
+        formatDate(entry.event_date),
+        cleanText(entry.event_time),
+        isOnlineEvent(entry) ? "" : cleanText(entry.event_location),
+      ].filter(Boolean).join(" · ")
     : "";
 
   if (mode === "event") {
@@ -855,15 +890,20 @@ function openEntry(id, mode = "post") {
     const eventBody = eventBodyRaw
       ? (/<[a-z][\s\S]*>/i.test(eventBodyRaw) ? sanitizeRichText(eventBodyRaw) : `<p>${escapeHtml(eventBodyRaw)}</p>`)
       : "";
-    const eventImageValue = entryEventImage(entry, past);
+    const eventImageValue = isOnlineEvent(entry) && !past
+      ? firstContent(entry.post_image, entry.event_image)
+      : entryEventImage(entry, past);
     const eventImageAlt = entryEventImageAlt(entry, eventImageValue);
     // Upcoming venue imagery is already rendered in the location panel.
-    // Only show a separate hero image when no venue image is available.
-    const hasVenueImage = Boolean(assetUrl(entry.venue_image));
+    // Online events have no venue panel, so their available image stays in the dialog.
+    const hasVenueImage = !isOnlineEvent(entry) && Boolean(assetUrl(entry.venue_image));
     const media = past || !hasVenueImage
       ? buildDialogImage(eventImageValue, eventImageAlt, "entry-event-photo")
       : "";
     const locationBlock = !past ? buildFutureLocationBlock(entry) : "";
+    const onlineEventLine = isOnlineEvent(entry)
+      ? buildOnlineEventLine(entry, past, registrationUrl)
+      : "";
 
     openDialog(`
       <div class="dialog-body">
@@ -872,8 +912,9 @@ function openEntry(id, mode = "post") {
         ${eventMeta ? `<div class="dialog-meta"><span>${escapeHtml(eventMeta)}</span></div>` : ""}
         ${media}
         ${eventBody ? `<div class="dialog-copy">${eventBody}</div>` : ""}
+        ${onlineEventLine}
         ${locationBlock}
-        ${!past && registrationUrl ? `<a class="dialog-source" href="${escapeHtml(registrationUrl)}" target="_blank" rel="noopener noreferrer">Event details / registration &nearr;</a>` : ""}
+        ${!past && registrationUrl && !isOnlineEvent(entry) ? `<a class="dialog-source" href="${escapeHtml(registrationUrl)}" target="_blank" rel="noopener noreferrer">Event details / registration &nearr;</a>` : ""}
         ${past && sourceUrl ? `<a class="dialog-source" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">Related ${escapeHtml(cleanText(entry.source) || "source")} &nearr;</a>` : ""}
       </div>`);
   } else {
@@ -884,7 +925,7 @@ function openEntry(id, mode = "post") {
       : "";
     const postVisual = entryStoryImage(entry, past);
     const postVisualAlt = entryStoryImageAlt(entry, postVisual);
-    const eventInfo = buildEntryEventInfo(entry, past);
+    const eventInfo = buildEntryEventInfo(entry, past, registrationUrl);
     const locationBlock = hasEvent && !past ? buildFutureLocationBlock(entry) : "";
 
     openDialog(`
@@ -896,7 +937,7 @@ function openEntry(id, mode = "post") {
         ${eventInfo}
         ${body ? `<div class="dialog-copy">${body}</div>` : ""}
         ${locationBlock}
-        ${hasEvent && !past && registrationUrl ? `<a class="dialog-source" href="${escapeHtml(registrationUrl)}" target="_blank" rel="noopener noreferrer">Event details / registration &nearr;</a>` : ""}
+        ${hasEvent && !past && registrationUrl && !isOnlineEvent(entry) ? `<a class="dialog-source" href="${escapeHtml(registrationUrl)}" target="_blank" rel="noopener noreferrer">Event details / registration &nearr;</a>` : ""}
         ${sourceUrl ? `<a class="dialog-source" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">View original ${escapeHtml(cleanText(entry.source) || "source")} &nearr;</a>` : ""}
       </div>`);
   }
