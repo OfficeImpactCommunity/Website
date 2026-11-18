@@ -185,6 +185,50 @@ function entryPostTitle(entry) {
   return cleanText(entry.post_title) || cleanText(entry.title) || "Untitled";
 }
 
+function firstContent(...values) {
+  return values.map(cleanText).find(Boolean) || "";
+}
+
+// Shared event/story records can keep one description and one image.
+// Prefer the field that best fits the current context, then fall back.
+function entryStorySummary(entry) {
+  return firstContent(entry.post_summary, entry.event_summary);
+}
+
+function entryEventSummary(entry) {
+  return firstContent(entry.event_summary, entry.post_summary);
+}
+
+function entryStoryBody(entry) {
+  return firstContent(entry.post_body, entry.event_details, entry.post_summary, entry.event_summary);
+}
+
+function entryEventBody(entry, past = false) {
+  return past
+    ? firstContent(entry.post_body, entry.event_details, entry.post_summary, entry.event_summary)
+    : firstContent(entry.event_details, entry.post_body, entry.event_summary, entry.post_summary);
+}
+
+function entryStoryImage(entry, past = false) {
+  return past
+    ? firstContent(entry.post_image, entry.event_image, entry.venue_image)
+    : firstContent(entry.post_image, entry.venue_image, entry.event_image);
+}
+
+function entryEventImage(entry, past = false) {
+  return past
+    ? firstContent(entry.event_image, entry.post_image, entry.venue_image)
+    : firstContent(entry.venue_image, entry.post_image, entry.event_image);
+}
+
+function entryStoryImageAlt(entry) {
+  return firstContent(entry.post_image_alt, entry.event_image_alt) || entryPostTitle(entry);
+}
+
+function entryEventImageAlt(entry) {
+  return firstContent(entry.event_image_alt, entry.post_image_alt) || entryCalendarTitle(entry);
+}
+
 function entryCalendarTitle(entry) {
   return cleanText(entry.calendar_title) || cleanText(entry.title) || entryPostTitle(entry);
 }
@@ -540,8 +584,8 @@ function renderStories() {
   }
 
   container.innerHTML = posts.slice(0, 6).map((entry, index) => {
-    const image = assetUrl(entry.post_image);
-    const imageAlt = cleanText(entry.post_image_alt) || entryPostTitle(entry);
+    const image = assetUrl(entryStoryImage(entry, entryIsPastEvent(entry)));
+    const imageAlt = entryStoryImageAlt(entry);
     const postDate = entryPublicationDate(entry);
     const isFeaturedCard = index === 0 && isTrue(entry.featured_post);
     const showFeaturedImage = Boolean(image && isFeaturedCard);
@@ -565,7 +609,7 @@ function renderStories() {
         <div class="story-card__body">
           <div class="story-card__meta"><span>${escapeHtml(cleanText(entry.category) || "Update")}</span>${postDate ? `<span>${escapeHtml(formatDate(postDate, { day: "2-digit", month: "short", year: "numeric" }))}</span>` : ""}</div>
           <h3>${escapeHtml(entryPostTitle(entry))}</h3>
-          <p>${escapeHtml(cleanText(entry.post_summary))}</p>
+          <p>${escapeHtml(entryStorySummary(entry))}</p>
           <div class="story-card__footer">
             <span>${cleanText(entry.source) === "LinkedIn" ? "LinkedIn highlight" : "Community story"}</span>
             <button type="button" data-entry-post="${escapeHtml(cleanText(entry.id))}">Read &rarr;</button>
@@ -785,15 +829,15 @@ function openEntry(id, mode = "post") {
     : "";
 
   if (mode === "event") {
-    const eventBodyRaw = past
-      ? cleanText(entry.post_body) || cleanText(entry.event_details) || cleanText(entry.post_summary) || cleanText(entry.event_summary)
-      : cleanText(entry.event_details) || cleanText(entry.event_summary) || cleanText(entry.post_body) || cleanText(entry.post_summary);
+    const eventBodyRaw = entryEventBody(entry, past);
     const eventBody = eventBodyRaw
       ? (/<[a-z][\s\S]*>/i.test(eventBodyRaw) ? sanitizeRichText(eventBodyRaw) : `<p>${escapeHtml(eventBodyRaw)}</p>`)
       : "";
-    const pastImageValue = cleanText(entry.event_image) || cleanText(entry.post_image);
-    const pastImageAlt = cleanText(entry.event_image_alt) || cleanText(entry.post_image_alt) || entryCalendarTitle(entry);
-    const media = past ? buildDialogImage(pastImageValue, pastImageAlt, "entry-event-photo") : "";
+    const eventImageValue = entryEventImage(entry, past);
+    const eventImageAlt = entryEventImageAlt(entry);
+    const media = past
+      ? buildDialogImage(eventImageValue, eventImageAlt, "entry-event-photo")
+      : buildDialogImage(cleanText(entry.post_image) || cleanText(entry.event_image), entryStoryImageAlt(entry), "entry-event-photo");
     const locationBlock = !past ? buildFutureLocationBlock(entry) : "";
 
     openDialog(`
@@ -809,12 +853,12 @@ function openEntry(id, mode = "post") {
       </div>`);
   } else {
     const postDate = entryPublicationDate(entry);
-    const bodyRaw = cleanText(entry.post_body) || cleanText(entry.post_summary);
+    const bodyRaw = entryStoryBody(entry);
     const body = bodyRaw
       ? (/<[a-z][\s\S]*>/i.test(bodyRaw) ? sanitizeRichText(bodyRaw) : `<p>${escapeHtml(bodyRaw)}</p>`)
       : "";
-    const postVisual = cleanText(entry.post_image) || (past ? cleanText(entry.event_image) : "");
-    const postVisualAlt = cleanText(entry.post_image_alt) || cleanText(entry.event_image_alt) || entryPostTitle(entry);
+    const postVisual = entryStoryImage(entry, past);
+    const postVisualAlt = entryStoryImageAlt(entry);
     const eventInfo = buildEntryEventInfo(entry, past);
     const locationBlock = hasEvent && !past ? buildFutureLocationBlock(entry) : "";
 
