@@ -483,3 +483,27 @@ button.month-tile{cursor:pointer}
     padding-bottom:30px !important;
   }
 }
+
+
+/* Compact metadata for online events: no oversized venue/location card. */
+.dialog-online-line{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px 14px;
+  margin:22px 0 26px;
+  color:rgba(17,17,17,.58);
+  font-size:13px;
+  line-height:1.5;
+}
+.dialog-online-line strong{
+  color:var(--accent-deep);
+  font-weight:850;
+}
+.dialog-online-line a{
+  color:var(--ink);
+  font-weight:800;
+  border-bottom:1px solid currentColor;
+  padding-bottom:2px;
+  text-decoration:none;
+}
