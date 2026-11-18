@@ -208,10 +208,6 @@ function entryStorySummary(entry) {
   return firstContent(entry.post_summary, entry.event_summary);
 }
 
-function entryEventSummary(entry) {
-  return firstContent(entry.event_summary, entry.post_summary);
-}
-
 function entryStoryBody(entry) {
   return firstContent(entry.post_body, entry.event_details, entry.post_summary, entry.event_summary);
 }
@@ -234,12 +230,24 @@ function entryEventImage(entry, past = false) {
     : firstContent(entry.venue_image, entry.post_image, entry.event_image);
 }
 
-function entryStoryImageAlt(entry) {
-  return firstContent(entry.post_image_alt, entry.event_image_alt) || entryPostTitle(entry);
+function entryStoryImageAlt(entry, imageValue) {
+  if (imageValue && cleanText(entry.post_image) === imageValue) {
+    return firstContent(entry.post_image_alt) || entryPostTitle(entry);
+  }
+  if (imageValue && cleanText(entry.event_image) === imageValue) {
+    return firstContent(entry.event_image_alt) || entryPostTitle(entry);
+  }
+  return entryPostTitle(entry);
 }
 
-function entryEventImageAlt(entry) {
-  return firstContent(entry.event_image_alt, entry.post_image_alt) || entryCalendarTitle(entry);
+function entryEventImageAlt(entry, imageValue) {
+  if (imageValue && cleanText(entry.event_image) === imageValue) {
+    return firstContent(entry.event_image_alt) || entryCalendarTitle(entry);
+  }
+  if (imageValue && cleanText(entry.post_image) === imageValue) {
+    return firstContent(entry.post_image_alt) || entryCalendarTitle(entry);
+  }
+  return entryCalendarTitle(entry);
 }
 
 function entryCalendarTitle(entry) {
@@ -597,8 +605,9 @@ function renderStories() {
   }
 
   container.innerHTML = posts.slice(0, 6).map((entry, index) => {
-    const image = assetUrl(entryStoryImage(entry, entryIsPastEvent(entry)));
-    const imageAlt = entryStoryImageAlt(entry);
+    const imageValue = entryStoryImage(entry, entryIsPastEvent(entry));
+    const image = assetUrl(imageValue);
+    const imageAlt = entryStoryImageAlt(entry, imageValue);
     const postDate = entryPublicationDate(entry);
     const isFeaturedCard = index === 0 && isTrue(entry.featured_post);
     const showFeaturedImage = Boolean(image && isFeaturedCard);
@@ -847,10 +856,13 @@ function openEntry(id, mode = "post") {
       ? (/<[a-z][\s\S]*>/i.test(eventBodyRaw) ? sanitizeRichText(eventBodyRaw) : `<p>${escapeHtml(eventBodyRaw)}</p>`)
       : "";
     const eventImageValue = entryEventImage(entry, past);
-    const eventImageAlt = entryEventImageAlt(entry);
-    const media = past
+    const eventImageAlt = entryEventImageAlt(entry, eventImageValue);
+    // Upcoming venue imagery is already rendered in the location panel.
+    // Only show a separate hero image when no venue image is available.
+    const hasVenueImage = Boolean(assetUrl(entry.venue_image));
+    const media = past || !hasVenueImage
       ? buildDialogImage(eventImageValue, eventImageAlt, "entry-event-photo")
-      : buildDialogImage(cleanText(entry.post_image) || cleanText(entry.event_image), entryStoryImageAlt(entry), "entry-event-photo");
+      : "";
     const locationBlock = !past ? buildFutureLocationBlock(entry) : "";
 
     openDialog(`
@@ -871,7 +883,7 @@ function openEntry(id, mode = "post") {
       ? (/<[a-z][\s\S]*>/i.test(bodyRaw) ? sanitizeRichText(bodyRaw) : `<p>${escapeHtml(bodyRaw)}</p>`)
       : "";
     const postVisual = entryStoryImage(entry, past);
-    const postVisualAlt = entryStoryImageAlt(entry);
+    const postVisualAlt = entryStoryImageAlt(entry, postVisual);
     const eventInfo = buildEntryEventInfo(entry, past);
     const locationBlock = hasEvent && !past ? buildFutureLocationBlock(entry) : "";
 
