@@ -223,6 +223,7 @@ content:
               - name: post_image
                 label: Story image
                 type: image
+                description: If blank, the venue image (upcoming event) or event photo (past event) is reused.
                 options:
                   path: stories
                   categories: [image]
@@ -309,14 +310,14 @@ content:
                     - Other
 
               - name: event_summary
-                label: Event-specific short description
+                label: Event short description (optional)
                 type: text
-                description: Optional. Useful if the event description should differ from the story summary.
+                description: Optional override. If blank, the story short introduction is reused.
 
               - name: event_details
-                label: Event-specific details
+                label: Event details (optional)
                 type: rich-text
-                description: Optional. Useful if the event information should differ from the eventual story / recap.
+                description: Optional override. If blank, the story / recap is reused.
                 options:
                   format: html
                   media: false
@@ -339,7 +340,7 @@ content:
               - name: venue_image
                 label: Venue image
                 type: image
-                description: Optional image shown for an upcoming event.
+                description: Optional image for an upcoming event. If blank, the story image is reused.
                 options:
                   path: events
                   categories: [image]
@@ -349,7 +350,7 @@ content:
               - name: event_image
                 label: Event photo
                 type: image
-                description: Optional photo from the actual event.
+                description: Optional photo from the actual event. If blank, the story image is reused.
                 options:
                   path: events
                   categories: [image]
@@ -395,7 +396,7 @@ content:
               - name: post_summary
                 label: Story short introduction
                 type: text
-                description: Short text shown on the story card.
+                description: Short text shown on the story card. If blank, the event short description is reused.
 
               - name: post_body
                 label: Story / recap
