@@ -3,7 +3,7 @@ name: Deploy preview website
 on:
   push:
     branches:
-      - Develop
+      - DevelopSupabase
 
 permissions:
   contents: read
