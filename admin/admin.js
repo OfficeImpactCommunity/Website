@@ -174,13 +174,13 @@ function previewImage(value) {
   return imagePreview(value);
 }
 
-function renderEntryPreview(group) {
+function renderEntryPreview(group, mode = "both") {
   const row = group.draft || group.live;
   const data = row?.data || {};
   const status = previewStatus(group);
   const kind = row?.kind || data.kind || "story";
-  const showEvent = kind === "event" || kind === "event_story";
-  const showStory = kind === "story" || kind === "event_story";
+  const showEvent = mode !== "story" && (kind === "event" || kind === "event_story");
+  const showStory = mode !== "event" && (kind === "story" || kind === "event_story");
   const key = group.key;
 
   const eventMarkup = showEvent ? (() => {
@@ -344,7 +344,7 @@ function renderContentPreview() {
         <span>Draft versions are shown here before publication</span>
       </div>
       <div class="admin-preview-events">
-        ${eventGroups.map(renderEntryPreview).join("") || '<div class="admin-preview-placeholder">No events in this section yet.</div>'}
+        ${eventGroups.map((group) => renderEntryPreview(group, "event")).join("") || '<div class="admin-preview-placeholder">No events in this section yet.</div>'}
       </div>
     </div>
     <div class="admin-preview-section">
@@ -353,7 +353,7 @@ function renderContentPreview() {
         <span>The public homepage displays up to six stories</span>
       </div>
       <div class="admin-preview-stories">
-        ${storySorted.slice(0, 6).map(renderEntryPreview).join("") || '<div class="admin-preview-placeholder">No stories in this section yet.</div>'}
+        ${storySorted.slice(0, 6).map((group) => renderEntryPreview(group, "story")).join("") || '<div class="admin-preview-placeholder">No stories in this section yet.</div>'}
       </div>
     </div>`;
 }
