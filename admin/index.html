@@ -38,8 +38,9 @@
 
     <section id="accessView" class="admin-auth-card" hidden>
       <span class="section-kicker">Access pending</span>
-      <h2>Your account is not enabled yet.</h2>
-      <p>You are signed in, but this Google account has not been added to the Office Impact editor list. Ask an administrator to grant access, then sign in again.</p>
+      <h2>This Google account does not have access yet.</h2>
+      <p id="accessMessage">You are signed in, but this email is not currently authorised to use the administration console. An administrator must add your email as an Editor or Admin. Once access has been granted, sign in again.</p>
+      <p class="admin-access-email">Signed in as <strong id="accessEmail"></strong></p>
       <button id="signOutAccess" class="button button--dark" type="button">Sign out</button>
     </section>
 
@@ -54,11 +55,12 @@
           <span class="section-kicker">Workspace</span>
           <button class="admin-tab is-active" type="button" data-tab="entries">Events &amp; Stories</button>
           <button class="admin-tab" type="button" data-tab="people">Team</button>
+          <button id="accessTab" class="admin-tab" type="button" data-tab="access" hidden>Users &amp; access</button>
           <div class="admin-sidebar__note">All changes are drafts until published by an administrator.</div>
         </aside>
 
         <div class="admin-content">
-          <div class="admin-content__heading">
+          <div id="contentHeading" class="admin-content__heading">
             <div>
               <span class="section-kicker">Content library</span>
               <h2>Your content <span id="listCount">0</span></h2>
@@ -74,6 +76,37 @@
           </div>
 
           <div id="recordList" class="admin-record-list"></div>
+
+          <section id="userAccessPanel" class="admin-access-panel" hidden>
+            <div class="admin-access-heading">
+              <div>
+                <span class="section-kicker">Administration</span>
+                <h2>Users &amp; access</h2>
+                <p>Grant an email address Editor or Admin access. If the person has not signed in before, the access grant is saved and applied automatically when they first sign in with Google using that exact email address. No invitation email is sent.</p>
+              </div>
+            </div>
+
+            <form id="editorAccessForm" class="admin-access-form">
+              <div class="admin-field">
+                <label for="accessGrantEmail">Google account email</label>
+                <input id="accessGrantEmail" name="email" type="email" autocomplete="email" placeholder="name@example.com" required>
+              </div>
+              <div class="admin-field">
+                <label for="accessGrantRole">Role</label>
+                <select id="accessGrantRole" name="role">
+                  <option value="editor">Editor — create and edit drafts</option>
+                  <option value="admin">Admin — manage users and publish</option>
+                </select>
+              </div>
+              <button id="grantAccessButton" class="button button--dark" type="submit">Grant access</button>
+            </form>
+
+            <div class="admin-access-list-heading">
+              <h3>Authorised accounts</h3>
+              <button id="refreshAccessList" class="admin-text-button" type="button">Refresh</button>
+            </div>
+            <div id="editorAccessList" class="admin-access-list"></div>
+          </section>
 
           <section id="editorPanel" class="admin-edit-panel" hidden>
             <div class="admin-edit-heading">
