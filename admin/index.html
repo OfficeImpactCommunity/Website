@@ -41,7 +41,10 @@
       <h2>This Google account does not have access yet.</h2>
       <p id="accessMessage">You are signed in, but this email is not currently authorised to use the administration console. An administrator must add your email as an Editor or Admin. Once access has been granted, sign in again.</p>
       <p class="admin-access-email">Signed in as <strong id="accessEmail"></strong></p>
-      <button id="signOutAccess" class="button button--dark" type="button">Sign out</button>
+      <div class="admin-access-buttons">
+        <button id="retryAccess" class="button button--accent" type="button">Check access again</button>
+        <button id="signOutAccess" class="admin-small-button" type="button">Sign out</button>
+      </div>
     </section>
 
     <section id="editorView" hidden>
