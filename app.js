@@ -404,25 +404,11 @@ async function loadLegacyContent() {
     : [];
 }
 
-async function setupAdminNavigation() {
-  const link = $("#adminNavLink");
-  if (!link) return;
-  link.hidden = true;
-
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-
-    const { data, error } = await supabase
-      .from("editors")
-      .select("active")
-      .eq("user_id", session.user.id)
-      .maybeSingle();
-
-    if (!error && data?.active) link.hidden = false;
-  } catch (error) {
-    console.warn("Admin navigation check failed:", error);
-  }
+function setupAdminNavigation() {
+  // The link is deliberately visible to everyone; the admin page enforces access.
+  $(".admin-nav-link").forEach((link) => {
+    link.hidden = false;
+  });
 }
 
 async function init() {
