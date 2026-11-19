@@ -562,6 +562,23 @@ async function init() {
     await supabase.auth.signOut();
     window.location.reload();
   });
+  $("#retryAccess").addEventListener("click", async () => {
+    const button = $("#retryAccess");
+    button.disabled = true;
+    button.textContent = "Checking…";
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (data?.user) await activate(data.user);
+      else showView("loginView");
+    } catch (error) {
+      notify("Could not check access: " + error.message, true);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Check access again";
+    }
+  });
+
   $("#signOutEditor").addEventListener("click", async () => {
     await supabase.auth.signOut();
     window.location.reload();
