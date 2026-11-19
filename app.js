@@ -406,9 +406,10 @@ async function loadLegacyContent() {
 
 function setupAdminNavigation() {
   // The link is deliberately visible to everyone; the admin page enforces access.
-  $(".admin-nav-link, .nav-admin-link").forEach((link) => {
-    link.hidden = false;
-  });
+  const footerLink = $("#adminNavLink");
+  const headerLink = $(".nav-admin-link");
+  if (footerLink) footerLink.hidden = false;
+  if (headerLink) headerLink.hidden = false;
 }
 
 async function init() {
