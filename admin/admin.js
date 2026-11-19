@@ -760,28 +760,39 @@ async function revokeEditorAccess(email) {
 async function activate(user) {
   state.user = user;
   $("#signedInEmail").textContent = user.email || "";
+
+  let role = null;
   try {
-    const role = await checkAccess(user);
-    state.role = role || null;
-    const accessTab = $("#accessTab");
-    if (accessTab) accessTab.hidden = role !== "admin";
-
-    if (!role) {
-      $("#accessEmail").textContent = user.email || "Unknown Google account";
-      $("#accessMessage").textContent = `The Google account ${user.email || "you are using"} is not currently authorised to use the administration console. Ask an Office Impact administrator to add this exact email as an Editor or Admin, then sign out and sign in again.`;
-      showView("accessView");
-      return;
-    }
-
-    $("#roleLabel").textContent = role === "admin" ? "Administrator" : "Editor";
-    showView("editorView");
-    await loadRecords();
+    role = await checkAccess(user);
   } catch (error) {
     state.role = null;
     $("#accessEmail").textContent = user.email || "Unknown Google account";
     $("#accessMessage").textContent = "We could not verify your access right now. Please refresh the page. If the issue continues, contact an Office Impact administrator.";
     showView("accessView");
-    notify("Access check failed: " + error.message, true);
+    notify("Access verification failed: " + error.message, true);
+    return;
+  }
+
+  state.role = role || null;
+  const accessTab = $("#accessTab");
+  if (accessTab) accessTab.hidden = role !== "admin";
+
+  if (!role) {
+    $("#accessEmail").textContent = user.email || "Unknown Google account";
+    $("#accessMessage").textContent = `The Google account ${user.email || "you are using"} is not currently authorised to use the administration console. Ask an Office Impact administrator to add this exact email as an Editor or Admin, then sign out and sign in again.`;
+    showView("accessView");
+    return;
+  }
+
+  $("#roleLabel").textContent = role === "admin" ? "Administrator" : "Editor";
+  showView("editorView");
+
+  try {
+    await loadRecords();
+  } catch (error) {
+    // Keep the verified role and editor interface visible: this is a content
+    // loading problem, not an authentication or authorisation failure.
+    notify("You are signed in, but the content could not be loaded: " + error.message, true);
   }
 }
 
