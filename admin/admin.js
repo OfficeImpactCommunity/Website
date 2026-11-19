@@ -477,7 +477,11 @@ async function activate(user) {
 
 async function init() {
   $("#googleSignIn").addEventListener("click", startGoogleLogin);
-  $("#signOut").addEventListener("click", async () => {
+  $("#signOutAccess").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+  });
+  $("#signOutEditor").addEventListener("click", async () => {
     await supabase.auth.signOut();
     window.location.reload();
   });
