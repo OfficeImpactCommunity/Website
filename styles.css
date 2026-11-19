@@ -516,14 +516,15 @@ button.month-tile{cursor:pointer}
 
 
 
-/* Compact Stay connected card with WhatsApp QR */
+
+/* Stay connected: stacked links with the supplied WhatsApp QR alongside */
 .section--join {
   padding-top: 34px;
   padding-bottom: 0;
 }
 
 .join-card.join-card--connected {
-  grid-template-columns: minmax(0, 1fr) minmax(340px, .9fr);
+  grid-template-columns: minmax(0, 1fr) minmax(330px, .9fr);
   gap: 44px;
   padding: 34px 42px;
   align-items: center;
@@ -538,8 +539,15 @@ button.month-tile{cursor:pointer}
 
 .join-card--connected .join-card__copy {
   display: grid;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) 116px;
+  align-items: center;
+  gap: 16px;
   font-size: 14px;
+}
+
+.join-card__channels {
+  display: grid;
+  gap: 10px;
 }
 
 .join-card__channel {
@@ -558,23 +566,14 @@ button.month-tile{cursor:pointer}
   transition: background .18s ease, transform .18s ease;
 }
 
+.join-card__channel--whatsapp {
+  background: rgba(255,255,255,.54);
+}
+
 .join-card__channel:hover,
 .join-card__channel:focus-visible {
   background: rgba(255,255,255,.68);
   transform: translateY(-1px);
-}
-
-.join-card__whatsapp-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 116px;
-  align-items: center;
-  gap: 16px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(36,35,33,.16);
-}
-
-.join-card__channel--whatsapp {
-  background: rgba(255,255,255,.54);
 }
 
 .join-card__qr {
@@ -586,7 +585,7 @@ button.month-tile{cursor:pointer}
 
 .join-card__qr-frame {
   display: block;
-  width: 108px;
+  width: 116px;
   padding: 5px;
   border: 1px solid rgba(36,35,33,.10);
   border-radius: 10px;
@@ -621,13 +620,22 @@ button.month-tile{cursor:pointer}
 
 @media (max-width: 980px) {
   .join-card.join-card--connected {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, .95fr);
+    grid-template-columns: minmax(0, 1fr) minmax(290px, .95fr);
     gap: 28px;
     padding: 30px;
   }
 
   .join-card--connected .join-card__intro h2 {
     font-size: clamp(32px, 5vw, 46px);
+  }
+
+  .join-card--connected .join-card__copy {
+    grid-template-columns: minmax(0, 1fr) 104px;
+    gap: 12px;
+  }
+
+  .join-card__qr-frame {
+    width: 104px;
   }
 }
 
@@ -647,9 +655,13 @@ button.month-tile{cursor:pointer}
     font-size: 38px;
   }
 
-  .join-card__whatsapp-row {
+  .join-card--connected .join-card__copy {
     grid-template-columns: minmax(0, 1fr) 96px;
     gap: 10px;
+  }
+
+  .join-card__channels {
+    gap: 8px;
   }
 
   .join-card__qr-frame {
