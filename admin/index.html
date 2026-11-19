@@ -1,223 +1,123 @@
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
-
-  <meta
-    name="robots"
-    content="noindex,nofollow"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://ozvtyutfjswajksjzcec.supabase.co; connect-src 'self' https://ozvtyutfjswajksjzcec.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'none'; media-src 'none'; worker-src 'none'">
   <title>Administration | Office Impact Community</title>
-
-  <link
-    rel="stylesheet"
-    href="../styles.css"
-  >
-
-  <link
-    rel="stylesheet"
-    href="./admin.css"
-  >
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="./admin.css">
 </head>
-
-
 <body class="admin-page">
-
   <header class="site-header">
-
     <div class="shell site-header__inner">
-
-      <a
-        class="brand brand--logo"
-        href="../"
-        aria-label="Office Impact Community home"
-      >
-        <img
-          class="brand-logo"
-          src="../media/office-impact-logo.jpg"
-          alt="Office Impact Community"
-        >
+      <a class="brand brand--logo" href="../" aria-label="Office Impact Community home">
+        <img class="brand-logo" src="../media/office-impact-logo.jpg" alt="Office Impact Community">
       </a>
-
-      <span class="admin-header-label">
-        Administration
-      </span>
-
-      <a
-        class="button button--dark admin-back"
-        href="../"
-      >
-        Back to website
-      </a>
-
+      <span class="admin-header-label">Administration</span>
+      <a class="button button--dark admin-back" href="../">Back to website</a>
     </div>
-
   </header>
 
-
-  <main>
-
-    <section class="shell admin-hero">
-
-      <span class="section-kicker">
-        Website administration
-      </span>
-
-      <h1>
-        Manage
-        <em>Office Impact.</em>
-      </h1>
-
-      <p>
-        Edit the development version first, review the changes
-        in Preview, and publish only when everything is ready.
-      </p>
-
-      <div class="admin-environment">
-        <span></span>
-        Development workspace
-      </div>
-
+  <main class="shell admin-main">
+    <section class="admin-hero admin-hero--compact">
+      <span class="section-kicker">Office Impact Community</span>
+      <h1>Manage <em>your content.</em></h1>
+      <p>Sign in with your approved Google account to manage events, stories and the team. Changes are saved as drafts until an administrator publishes them.</p>
     </section>
 
+    <div id="adminNotice" class="admin-notice" role="status" aria-live="polite" hidden></div>
 
-    <section class="shell admin-grid">
+    <section id="loginView" class="admin-auth-card">
+      <span class="section-kicker">Secure administration</span>
+      <h2>Welcome back.</h2>
+      <p>Use the Google account that has been granted access to Office Impact administration.</p>
+      <button id="googleSignIn" class="button button--dark" type="button">Continue with Google</button>
+    </section>
 
-      <article class="admin-card admin-card--content">
+    <section id="accessView" class="admin-auth-card" hidden>
+      <span class="section-kicker">Access pending</span>
+      <h2>Your account is not enabled yet.</h2>
+      <p>You are signed in, but this Google account has not been added to the Office Impact editor list. Ask an administrator to grant access, then sign in again.</p>
+      <button id="signOut" class="button button--dark" type="button">Sign out</button>
+    </section>
 
-        <div>
+    <section id="editorView" hidden>
+      <div class="admin-account-bar">
+        <div><strong id="signedInEmail"></strong><span id="roleLabel" class="admin-role"></span></div>
+        <button id="signOut" class="admin-text-button" type="button">Sign out</button>
+      </div>
 
-          <div class="admin-step">
-            01
+      <div class="admin-workspace">
+        <aside class="admin-sidebar">
+          <span class="section-kicker">Workspace</span>
+          <button class="admin-tab is-active" type="button" data-tab="entries">Events &amp; Stories</button>
+          <button class="admin-tab" type="button" data-tab="people">Team</button>
+          <div class="admin-sidebar__note">All changes are drafts until published by an administrator.</div>
+        </aside>
+
+        <div class="admin-content">
+          <div class="admin-content__heading">
+            <div>
+              <span class="section-kicker">Content library</span>
+              <h2>Your content <span id="listCount">0</span></h2>
+            </div>
+            <div id="newEntryActions" class="admin-create-actions">
+              <button id="newEvent" class="admin-small-button" type="button">New event +</button>
+              <button id="newStory" class="admin-small-button" type="button">New story +</button>
+              <button id="newEntry" class="button button--dark" type="button">Event + story</button>
+            </div>
+            <div id="newPersonActions" hidden>
+              <button id="newPerson" class="button button--dark" type="button">Add team member +</button>
+            </div>
           </div>
 
-          <span class="section-kicker">
-            Content
-          </span>
+          <div id="recordList" class="admin-record-list"></div>
 
-          <h2>
-            Manage content
-          </h2>
+          <section id="editorPanel" class="admin-edit-panel" hidden>
+            <div class="admin-edit-heading">
+              <div>
+                <span class="section-kicker">Draft editor</span>
+                <h2 id="editorTitle">Edit content</h2>
+                <p id="editorMeta"></p>
+              </div>
+              <button id="cancelEdit" class="admin-text-button" type="button">Close</button>
+            </div>
 
-          <p>
-            Add or edit events, stories, people and images.
-            Changes are saved to the Develop branch.
-          </p>
+            <div id="kindControl" class="admin-kind-control">
+              <label for="contentKind">Content appears in</label>
+              <select id="contentKind">
+                <option value="event">Events only</option>
+                <option value="story">Stories only</option>
+                <option value="event_story">Events and Stories</option>
+              </select>
+            </div>
 
+            <form id="contentForm">
+              <div id="editorFields" class="admin-form-grid"></div>
+              <div class="admin-form-actions">
+                <button id="saveDraft" class="button button--dark" type="button">Save draft</button>
+                <button id="publishDraft" class="button button--accent" type="button" hidden>Publish</button>
+                <button id="unpublishLive" class="admin-small-button" type="button" hidden>Unpublish live</button>
+                <button id="deleteDraft" class="admin-danger-button" type="button" hidden>Delete draft</button>
+              </div>
+            </form>
+          </section>
         </div>
-
-        <a
-          class="button button--dark"
-          href="https://app.pagescms.org/officeimpactcommunity/website/Develop/file/entries"
-        >
-          Open content manager &nearr;
-        </a>
-
-      </article>
-
-
-      <article class="admin-card admin-card--preview">
-
-        <div>
-
-          <div class="admin-step">
-            02
-          </div>
-
-          <span class="section-kicker">
-            Preview
-          </span>
-
-          <h2>
-            Review changes
-          </h2>
-
-          <p>
-            Open the unpublished development website and check
-            the content before publishing.
-          </p>
-
-        </div>
-
-        <a
-          class="button button--accent"
-          href="https://officeimpactcommunity.github.io/Website-preview/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Open preview &nearr;
-        </a>
-
-      </article>
-
-    </section>
-
-
-    <section class="shell admin-publish">
-
-      <div class="admin-step admin-step--large">
-        03
       </div>
-
-      <div>
-
-        <span class="section-kicker">
-          Production
-        </span>
-
-        <h2>
-          Publish when ready
-        </h2>
-
-        <p>
-          Return to Pages CMS and select
-          <strong>Publish to production</strong>.
-          The existing publishing workflow will move the approved
-          development version to the live website.
-        </p>
-
-      </div>
-
     </section>
-
   </main>
 
-
   <footer class="footer admin-footer">
-
     <div class="shell footer-grid">
-
-      <a
-        class="brand brand--footer brand--logo"
-        href="../"
-      >
-        <img
-          class="brand-logo brand-logo--footer"
-          src="../media/office-impact-logo.jpg"
-          alt="Office Impact Community"
-        >
+      <a class="brand brand--footer brand--logo" href="../">
+        <img class="brand-logo brand-logo--footer" src="../media/office-impact-logo.jpg" alt="Office Impact Community">
       </a>
-
-      <p>
-        Office Impact Community website administration.
-      </p>
-
-      <div class="footer-links">
-        <a href="../">
-          Public website &nearr;
-        </a>
-      </div>
-
+      <p>Office Impact Community website administration.</p>
+      <div class="footer-links"><a href="../">Public website &nearr;</a></div>
     </div>
-
   </footer>
-
+  <script type="module" src="./admin.js"></script>
 </body>
 </html>
