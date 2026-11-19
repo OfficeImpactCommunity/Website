@@ -404,7 +404,7 @@ function adminDetailRichText(value) {
   const doc = parser.parseFromString("<body>" + raw + "</body>", "text/html");
   const allowed = new Set(["P","BR","STRONG","B","EM","I","UL","OL","LI","H3","H4","BLOCKQUOTE","A"]);
   const drop = new Set(["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","SVG","MATH","FORM","INPUT","TEXTAREA","BUTTON"]);
-  $("*", doc.body).forEach((el) => {
+  $$("*", doc.body).forEach((el) => {
     const tag = el.tagName;
     if (drop.has(tag)) { el.remove(); return; }
     if (!allowed.has(tag)) { el.replaceWith(...el.childNodes); return; }
@@ -493,7 +493,7 @@ function openAdminPreviewDialog(content, status) {
       '<span>' + escapeHtml(status.note) + '</span>' +
     '</div>' + content;
   if (typeof dialog.showModal === "function") dialog.showModal();
-  $("img", target).forEach((img) => img.addEventListener("error", () => {
+  $$("img", target).forEach((img) => img.addEventListener("error", () => {
     const figure = img.closest(".story-dialog__image");
     if (figure) figure.remove();
     else img.remove();
