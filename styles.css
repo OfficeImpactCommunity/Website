@@ -507,3 +507,9 @@ button.month-tile{cursor:pointer}
   padding-bottom:2px;
   text-decoration:none;
 }
+
+/* Visible administration entry point */
+.nav-admin-link{
+  color:var(--accent-deep);
+  font-weight:850;
+}
