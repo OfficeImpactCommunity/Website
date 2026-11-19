@@ -601,9 +601,9 @@ async function init() {
     $("#editorPanel").hidden = true;
     clearNotice();
   });
-  $(".admin-tab").forEach((tab) => tab.addEventListener("click", async () => {
+  $$(".admin-tab").forEach((tab) => tab.addEventListener("click", async () => {
     state.tab = tab.dataset.tab;
-    $(".admin-tab").forEach((item) => item.classList.toggle("is-active", item === tab));
+    $$(".admin-tab").forEach((item) => item.classList.toggle("is-active", item === tab));
 
     const showingAccess = state.tab === "access";
     const contentHeading = $("#contentHeading");
