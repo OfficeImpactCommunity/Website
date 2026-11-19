@@ -449,3 +449,45 @@
   outline:2px solid var(--accent-deep);
   outline-offset:2px;
 }
+
+
+.admin-image-input {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.admin-image-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: #9a392d;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.admin-image-remove[hidden] {
+  display: none;
+}
+
+.admin-image-remove svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-image-remove:hover,
+.admin-image-remove:focus-visible {
+  color: #70251d;
+  text-decoration: underline;
+}
