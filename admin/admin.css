@@ -360,3 +360,66 @@
  .admin-access-panel{padding:17px}
  .admin-access-person{align-items:flex-start}
 }
+
+
+/* Admin page header logo uses the same transparent brand asset as the main site. */
+.admin-page .brand-logo{mix-blend-mode:normal}
+
+/* Preview the public cards inside the editor, with visible publication state. */
+.admin-page [hidden]{display:none !important}
+.admin-content-preview{margin-top:30px;padding:26px;border:1px solid var(--line);border-radius:20px;background:rgba(255,254,254,.7)}
+.admin-preview-title{display:flex;justify-content:space-between;align-items:start;gap:18px;margin-bottom:22px}
+.admin-preview-title h2{margin:7px 0 6px;font-size:28px;letter-spacing:-.04em}
+.admin-preview-title p{margin:0;max-width:650px;color:rgba(36,35,33,.62);font-size:12px;line-height:1.55}
+.admin-preview-key{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.admin-preview-status{display:inline-flex;align-items:center;white-space:nowrap;border-radius:999px;padding:5px 9px;font-size:9px;line-height:1.2;font-weight:850;letter-spacing:.06em;text-transform:uppercase}
+.admin-preview-status--live{background:#e6eee8;color:#34744d}
+.admin-preview-status--draft{background:#f4e9dc;color:#9a6b25}
+.admin-preview-section{margin-top:24px}
+.admin-preview-section:first-child{margin-top:0}
+.admin-preview-section__heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
+.admin-preview-section__heading h3{margin:0;font-size:17px;letter-spacing:-.025em}
+.admin-preview-section__heading>span{font-size:10px;color:rgba(36,35,33,.52)}
+.admin-preview-events{display:grid;gap:10px}
+.admin-preview-event{padding:8px 15px 12px;border:1px solid var(--line);border-radius:15px;background:white}
+.admin-preview-card__bar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:0 0 9px}
+.admin-preview-card__note{min-width:0;flex:1;font-size:10px;color:rgba(36,35,33,.54)}
+.admin-preview-card__bar .admin-small-button{padding:6px 10px}
+.admin-preview-event .event-item{padding:10px 0 0;border:0;cursor:default}
+.admin-preview-event .event-item:hover{padding-left:0;background:none}
+.admin-preview-event .event-date{width:58px;height:58px;border-radius:14px}
+.admin-preview-event .event-date strong{font-size:23px}
+.admin-preview-event .event-info h3{font-size:19px}
+.admin-preview-event .event-info p{font-size:12px}
+.admin-preview-stories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.admin-preview-stories .story-card{grid-column:auto;min-height:300px;border-radius:17px}
+.admin-preview-stories .story-card:nth-child(1){grid-column:auto}
+.admin-preview-stories .story-card .admin-preview-card__bar{padding:12px 14px 8px}
+.admin-preview-stories .story-card__body{padding:16px}
+.admin-preview-stories .story-card h3,.admin-preview-stories .story-card:nth-child(1) h3{font-size:23px}
+.admin-preview-stories .story-card p{font-size:12px;margin-bottom:14px}
+.admin-preview-stories .story-card__meta{font-size:9px}
+.admin-preview-stories .story-card__image img{min-height:190px;max-height:230px}
+.admin-preview-stories .story-card__thumb{margin:14px 0 0 16px}
+.admin-preview-stories .story-card__thumb img{max-height:90px}
+.admin-preview-people-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.admin-preview-person .admin-preview-card__bar{padding:12px 13px 8px}
+.admin-preview-person .person-avatar{font-size:52px}
+.admin-preview-person .person-copy{padding:16px}
+.admin-preview-person .person-copy h3{font-size:18px}
+.admin-preview-person .person-short-bio{-webkit-line-clamp:3;font-size:12px}
+.admin-preview-placeholder{padding:17px;border:1px dashed var(--line);border-radius:13px;background:white;display:grid;gap:5px;color:rgba(36,35,33,.62);font-size:12px}
+.admin-preview-placeholder strong{font-size:14px;color:var(--ink)}
+@media(max-width:760px){
+ .admin-content-preview{padding:17px}
+ .admin-preview-title{display:grid}
+ .admin-preview-key{justify-content:flex-start}
+ .admin-preview-section__heading{display:grid;gap:3px}
+ .admin-preview-stories{grid-template-columns:1fr}
+ .admin-preview-people-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:480px){
+ .admin-preview-people-grid{grid-template-columns:1fr}
+ .admin-preview-event .event-item{grid-template-columns:58px minmax(0,1fr)}
+ .admin-preview-event .event-open{display:none}
+}
