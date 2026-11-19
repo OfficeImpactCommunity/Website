@@ -125,39 +125,30 @@
     </section>
 
     <section class="section section--join">
-      <div class="shell join-card">
-        <div>
+      <div class="shell join-card join-card--connected">
+        <div class="join-card__intro">
           <span class="section-kicker">Stay connected</span>
           <h2>One community.<br>Between the events, too.</h2>
         </div>
         <div class="join-card__copy">
-          <p>Join the LinkedIn group for conversations, questions, useful suppliers and the next Office Impact gathering.</p>
-          <a class="button button--dark" href="https://www.linkedin.com/groups/42222009/" target="_blank" rel="noopener noreferrer">Open LinkedIn group &nearr;</a>
+          <a class="join-card__channel" href="https://www.linkedin.com/groups/42222009/" target="_blank" rel="noopener noreferrer">
+            <span>LinkedIn group</span><span aria-hidden="true">&nearr;</span>
+          </a>
+          <div class="join-card__whatsapp-row">
+            <a class="join-card__channel join-card__channel--whatsapp" href="https://chat.whatsapp.com/CKjZeTyL5r69wYViJJmx1t" target="_blank" rel="noopener noreferrer">
+              <span>WhatsApp group</span><span aria-hidden="true">&nearr;</span>
+            </a>
+            <div class="join-card__qr">
+              <a class="join-card__qr-frame" href="https://chat.whatsapp.com/CKjZeTyL5r69wYViJJmx1t" target="_blank" rel="noopener noreferrer" aria-label="Open the Office Impact Community WhatsApp group">
+                <img src="./media/office-impact-whatsapp-qr.svg" alt="QR code to join the Office Impact Community WhatsApp group">
+              </a>
+              <span class="join-card__qr-label">Scan to join</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="section section--whatsapp" aria-labelledby="whatsappHeading">
-      <div class="shell">
-        <div class="whatsapp-card">
-          <div class="whatsapp-card__copy">
-            <img class="whatsapp-card__brand" src="./media/office-impact-logo.png" alt="Office Impact Community">
-            <h2 id="whatsappHeading">Our community,<br>now on WhatsApp.</h2>
-            <p class="whatsapp-card__script">Let's keep in touch.</p>
-            <p class="whatsapp-card__description">Ask questions, exchange tips and share a little of your everyday office life.</p>
-            <a class="whatsapp-card__join" href="https://chat.whatsapp.com/CKjZeTyL5r69wYViJJmx1t" target="_blank" rel="noopener noreferrer">
-              Join the WhatsApp group <span aria-hidden="true">&nearr;</span>
-            </a>
-          </div>
-          <div class="whatsapp-card__scan">
-            <a class="whatsapp-card__qr-frame" href="https://chat.whatsapp.com/CKjZeTyL5r69wYViJJmx1t" target="_blank" rel="noopener noreferrer" aria-label="Open the Office Impact Community WhatsApp group">
-              <img src="./media/office-impact-whatsapp-qr.svg" alt="QR code to join the Office Impact Community WhatsApp group">
-            </a>
-            <span class="whatsapp-card__scan-label">Scan to join the group</span>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="footer">
@@ -167,8 +158,7 @@
       </a>
       <p>A peer community for office, workplace, facilities and community professionals.</p>
      <div class="footer-links">
-  <a href="mailto:hello@officeimpact.co">hello@officeimpact.co</a>
-  <a href="https://chat.whatsapp.com/CKjZeTyL5r69wYViJJmx1t" target="_blank" rel="noopener noreferrer">WhatsApp group &nearr;</a>
+  <a class="footer-email" href="mailto:hello@officeimpact.co"><span aria-hidden="true">✉️</span> hello@officeimpact.co</a>
   <a href="https://www.linkedin.com/groups/42222009/" target="_blank" rel="noopener noreferrer">LinkedIn group &nearr;</a>
   <a href="#top">Back to top &uarr;</a>
 </div>

@@ -701,6 +701,12 @@ function renderField(field, data) {
           <div class="admin-image-preview">${preview ? `<img src="${escapeHtml(preview)}" alt="">` : '<span>No image selected</span>'}</div>
           <div class="admin-image-input">
             <input id="${id}" type="file" accept="image/jpeg,image/png,image/webp" data-upload-field="${field.name}">
+            <button class="admin-image-remove" type="button" data-remove-image="${field.name}" aria-label="Remove photo" title="Remove photo" ${value ? "" : "hidden"}>
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
+              </svg>
+              <span>Remove photo</span>
+            </button>
             <small>JPG, PNG or WebP · up to 10 MB</small>
             <span class="admin-upload-status" data-upload-status="${field.name}"></span>
           </div>
@@ -913,6 +919,24 @@ async function deleteDraft() {
   await loadRecords();
 }
 
+function removeImage(button) {
+  const name = button.dataset.removeImage;
+  const field = button.closest(".admin-field");
+  if (!field || !name) return;
+
+  const hidden = field.querySelector(`input[type="hidden"][name="${CSS.escape(name)}"]`);
+  const fileInput = field.querySelector(`[data-upload-field="${CSS.escape(name)}"]`);
+  const preview = field.querySelector(".admin-image-preview");
+  const status = field.querySelector(`[data-upload-status="${CSS.escape(name)}"]`);
+  if (!hidden || !preview) return;
+
+  hidden.value = "";
+  if (fileInput) fileInput.value = "";
+  preview.innerHTML = '<span>No image selected</span>';
+  button.hidden = true;
+  if (status) status.textContent = "Photo removed — save draft to apply.";
+}
+
 async function uploadImage(input) {
   const file = input.files?.[0];
   if (!file) return;
@@ -943,6 +967,8 @@ async function uploadImage(input) {
     hidden.value = data.publicUrl;
     const preview = hidden.closest(".admin-field").querySelector(".admin-image-preview");
     preview.innerHTML = `<img src="${escapeHtml(data.publicUrl)}" alt="">`;
+    const removeButton = hidden.closest(".admin-field").querySelector("[data-remove-image]");
+    if (removeButton) removeButton.hidden = false;
     status.textContent = "Uploaded";
   } catch (error) {
     status.textContent = "";
@@ -1214,6 +1240,10 @@ async function init() {
   $("#editorFields").addEventListener("change", (event) => {
     const input = event.target.closest("[data-upload-field]");
     if (input) uploadImage(input);
+  });
+  $("#editorFields").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-remove-image]");
+    if (button) removeImage(button);
   });
 
   const { data: { session } } = await supabase.auth.getSession();
