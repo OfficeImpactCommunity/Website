@@ -377,13 +377,23 @@ async function loadSupabaseContent() {
   if (entriesResult.error) throw entriesResult.error;
   if (peopleResult.error) throw peopleResult.error;
 
+  // The database stage is the publication source of truth. A legacy
+  // published flag inside the JSON payload must not hide a row already
+  // published as live in Supabase.
   state.entries = (entriesResult.data || [])
-    .map((row) => ({ ...(row.data || {}), id: row.content_key, kind: row.kind }))
-    .filter(entryIsPublished);
+    .map((row) => ({
+      ...(row.data || {}),
+      id: row.content_key,
+      kind: row.kind,
+      published: true,
+    }));
 
   state.people = (peopleResult.data || [])
-    .map((row) => ({ ...(row.data || {}), id: row.person_key }))
-    .filter((item) => !isFalse(item.published));
+    .map((row) => ({
+      ...(row.data || {}),
+      id: row.person_key,
+      published: true,
+    }));
 }
 
 async function loadLegacyContent() {
