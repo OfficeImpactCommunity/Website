@@ -9,6 +9,7 @@ const state = {
   tab: "entries",
   entries: [],
   people: [],
+  accessRows: [],
   current: null,
 };
 
@@ -456,22 +457,102 @@ async function uploadImage(input) {
   }
 }
 
+async function loadEditorAccess() {
+  const { data, error } = await supabase.rpc("admin_list_editor_access");
+  if (error) throw error;
+  state.accessRows = Array.isArray(data) ? data : [];
+  renderEditorAccess();
+}
+
+function renderEditorAccess() {
+  const container = $("#editorAccessList");
+  if (!state.accessRows.length) {
+    container.innerHTML = '<div class="admin-empty">No Editor or Admin accounts have been added yet.</div>';
+    return;
+  }
+
+  const ownEmail = String(state.user?.email || "").toLowerCase();
+  container.innerHTML = state.accessRows.map((row) => {
+    const email = String(row.email || "");
+    const isSelf = email.toLowerCase() === ownEmail;
+    const status = row.status || (row.active ? "active" : "disabled");
+    const statusLabel = status === "pending"
+      ? "Pending first Google sign-in"
+      : status === "disabled"
+        ? "Disabled"
+        : "Active";
+    const statusClass = status === "pending" ? "pending" : status;
+    return `
+      <article class="admin-access-row">
+        <div class="admin-access-person">
+          <strong>${escapeHtml(email)}</strong>
+          <span class="admin-status admin-status--${escapeHtml(statusClass)}">${escapeHtml(statusLabel)}</span>
+          ${isSelf ? '<span class="admin-access-you">You</span>' : ""}
+        </div>
+        <div class="admin-access-actions">
+          <select aria-label="Role for ${escapeHtml(email)}" data-access-role="${escapeHtml(email)}" ${isSelf ? "disabled" : ""}>
+            <option value="editor" ${row.role === "editor" ? "selected" : ""}>Editor</option>
+            <option value="admin" ${row.role === "admin" ? "selected" : ""}>Admin</option>
+          </select>
+          <button class="admin-small-button" type="button" data-access-save="${escapeHtml(email)}" ${isSelf ? "disabled" : ""}>Update role</button>
+          <button class="admin-danger-button" type="button" data-access-remove="${escapeHtml(email)}" ${isSelf ? "disabled" : ""}>Remove access</button>
+        </div>
+      </article>`;
+  }).join("");
+}
+
+async function grantEditorAccess(email, role) {
+  const { data, error } = await supabase.rpc("admin_grant_editor_access", {
+    p_email: email,
+    p_role: role,
+  });
+  if (error) throw error;
+
+  if (data?.status === "pending") {
+    notify(`Access reserved for ${email}. They must sign in with Google using this exact email address.`);
+  } else {
+    notify(`${email} now has active ${role} access.`);
+  }
+  await loadEditorAccess();
+}
+
+async function revokeEditorAccess(email) {
+  if (String(email).toLowerCase() === String(state.user?.email || "").toLowerCase()) {
+    notify("You cannot remove your own access from this screen.", true);
+    return;
+  }
+  if (!confirm(`Remove Office Impact administration access for ${email}? They will no longer be able to edit or publish content.`)) return;
+
+  const { error } = await supabase.rpc("admin_revoke_editor_access", { p_email: email });
+  if (error) throw error;
+  notify(`Access removed for ${email}.`);
+  await loadEditorAccess();
+}
+
 async function activate(user) {
   state.user = user;
   $("#signedInEmail").textContent = user.email || "";
   try {
     const role = await checkAccess(user);
+    state.role = role || null;
+    $("#accessTab").hidden = role !== "admin";
+
     if (!role) {
+      $("#accessEmail").textContent = user.email || "Unknown Google account";
+      $("#accessMessage").textContent = `The Google account ${user.email || "you are using"} is not currently authorised to use the administration console. Ask an Office Impact administrator to add this exact email as an Editor or Admin, then sign out and sign in again.`;
       showView("accessView");
       return;
     }
-    state.role = role;
+
     $("#roleLabel").textContent = role === "admin" ? "Administrator" : "Editor";
     showView("editorView");
     await loadRecords();
   } catch (error) {
+    state.role = null;
+    $("#accessEmail").textContent = user.email || "Unknown Google account";
+    $("#accessMessage").textContent = "We could not verify your access right now. Please refresh the page. If the issue continues, contact an Office Impact administrator.";
     showView("accessView");
-    notify("Could not verify your editor access: " + error.message, true);
+    notify("Access check failed: " + error.message, true);
   }
 }
 
@@ -498,15 +579,82 @@ async function init() {
     $("#editorPanel").hidden = true;
     clearNotice();
   });
-  $$(".admin-tab").forEach((tab) => tab.addEventListener("click", () => {
+  $(".admin-tab").forEach((tab) => tab.addEventListener("click", async () => {
     state.tab = tab.dataset.tab;
-    $$(".admin-tab").forEach((item) => item.classList.toggle("is-active", item === tab));
+    $(".admin-tab").forEach((item) => item.classList.toggle("is-active", item === tab));
+
+    const showingAccess = state.tab === "access";
+    $("#contentHeading").hidden = showingAccess;
+    $("#recordList").hidden = showingAccess;
+    $("#userAccessPanel").hidden = !showingAccess;
     $("#newEntryActions").hidden = state.tab !== "entries";
     $("#newPersonActions").hidden = state.tab !== "people";
     $("#editorPanel").hidden = true;
     state.current = null;
-    renderList();
+
+    if (showingAccess) {
+      try {
+        await loadEditorAccess();
+        clearNotice();
+      } catch (error) {
+        notify("Could not load user access: " + error.message, true);
+      }
+    } else {
+      renderList();
+    }
   }));
+  $("#editorAccessForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const email = $("#accessGrantEmail").value.trim().toLowerCase();
+    const role = $("#accessGrantRole").value;
+    if (!email) return;
+
+    const button = $("#grantAccessButton");
+    button.disabled = true;
+    button.textContent = "Saving…";
+    try {
+      await grantEditorAccess(email, role);
+      $("#editorAccessForm").reset();
+    } catch (error) {
+      notify(error.message || "Could not grant access.", true);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Grant access";
+    }
+  });
+  $("#refreshAccessList").addEventListener("click", async () => {
+    try {
+      await loadEditorAccess();
+      notify("User access list refreshed.");
+    } catch (error) {
+      notify(error.message, true);
+    }
+  });
+  $("#editorAccessList").addEventListener("click", async (event) => {
+    const saveButton = event.target.closest("[data-access-save]");
+    const removeButton = event.target.closest("[data-access-remove]");
+
+    if (saveButton) {
+      const email = saveButton.dataset.accessSave;
+      const role = $(`[data-access-role="${CSS.escape(email)}"]`).value;
+      saveButton.disabled = true;
+      try {
+        await grantEditorAccess(email, role);
+      } catch (error) {
+        notify(error.message || "Could not update the role.", true);
+      } finally {
+        saveButton.disabled = false;
+      }
+    }
+
+    if (removeButton) {
+      try {
+        await revokeEditorAccess(removeButton.dataset.accessRemove);
+      } catch (error) {
+        notify(error.message || "Could not remove access.", true);
+      }
+    }
+  });
   $("#recordList").addEventListener("click", (event) => {
     const button = event.target.closest("[data-edit-key]");
     if (button) openExisting(button.dataset.editKey);
