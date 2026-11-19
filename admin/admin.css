@@ -249,3 +249,77 @@
   }
 
 }
+
+/* Supabase content administration */
+.admin-main{padding-bottom:80px}
+.admin-hero--compact{padding-top:70px;padding-bottom:38px}
+.admin-hero--compact h1{font-size:clamp(48px,7vw,82px);margin-bottom:20px}
+.admin-hero--compact>p{max-width:760px;font-size:17px}
+.admin-notice{margin:0 0 22px;padding:14px 18px;border:1px solid var(--line);border-radius:12px;background:var(--white);font-size:14px}
+.admin-notice.is-error{border-color:#b85b4b;color:#8c3024;background:#fff8f6}
+.admin-auth-card{max-width:620px;padding:38px;border:1px solid var(--line);border-radius:26px;background:var(--white)}
+.admin-auth-card h2{font-size:38px;letter-spacing:-.04em;margin:12px 0}
+.admin-auth-card p{max-width:480px;color:rgba(36,35,33,.68);line-height:1.6}
+.admin-auth-card .button{margin-top:14px}
+.admin-account-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;margin-bottom:22px;border:1px solid var(--line);border-radius:14px;background:var(--white);font-size:13px}
+.admin-account-bar>div{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.admin-role{padding:5px 9px;border-radius:999px;background:var(--accent);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.admin-workspace{display:grid;grid-template-columns:220px minmax(0,1fr);gap:26px;align-items:start}
+.admin-sidebar{position:sticky;top:24px;padding:20px 14px;border:1px solid var(--line);border-radius:18px;background:var(--white)}
+.admin-sidebar .section-kicker{display:block;padding:0 8px 12px}
+.admin-tab{display:block;width:100%;padding:12px 10px;border:0;border-radius:10px;background:transparent;text-align:left;font:inherit;font-size:13px;cursor:pointer}
+.admin-tab.is-active{background:var(--accent);font-weight:800}
+.admin-sidebar__note{margin:18px 8px 4px;padding-top:16px;border-top:1px solid var(--line);font-size:11px;line-height:1.55;color:rgba(36,35,33,.56)}
+.admin-content{min-width:0}
+.admin-content__heading{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.admin-content__heading h2{margin:8px 0 0;font-size:32px;letter-spacing:-.04em}
+.admin-content__heading h2 span{font-size:12px;vertical-align:middle;display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:50%;background:var(--accent);letter-spacing:0}
+.admin-create-actions{display:flex;gap:8px;flex-wrap:wrap}
+.admin-record-list{display:grid;gap:8px}
+.admin-record{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:17px 18px;border:1px solid var(--line);border-radius:14px;background:var(--white)}
+.admin-record__copy{display:grid;gap:4px;min-width:0}
+.admin-record__copy strong{overflow-wrap:anywhere}
+.admin-record__kind,.admin-record__key{font-size:10px;letter-spacing:.06em;color:rgba(36,35,33,.5)}
+.admin-record__kind{text-transform:uppercase;font-weight:800}
+.admin-record__actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.admin-status{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.admin-status--draft{color:#9a6b25}
+.admin-status--live{color:#34744d}
+.admin-small-button,.admin-danger-button,.admin-text-button{border:1px solid var(--line);border-radius:999px;background:var(--white);padding:9px 13px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.admin-text-button{border:0;background:transparent}
+.admin-danger-button{color:#9a392d;border-color:#e2b7b1}
+.admin-empty{padding:30px;border:1px dashed var(--line);border-radius:14px;color:rgba(36,35,33,.58);text-align:center;font-size:13px}
+.admin-edit-panel{margin-top:28px;padding:26px;border:1px solid var(--line);border-radius:20px;background:var(--white)}
+.admin-edit-heading{display:flex;justify-content:space-between;align-items:start;gap:18px;margin-bottom:24px}
+.admin-edit-heading h2{margin:8px 0;font-size:30px;letter-spacing:-.04em}
+.admin-edit-heading p{margin:0;color:rgba(36,35,33,.54);font-size:11px}
+.admin-kind-control{max-width:360px;margin-bottom:20px}
+.admin-kind-control label,.admin-field>label{display:block;margin-bottom:7px;font-size:12px;font-weight:800}
+.admin-kind-control select,.admin-field input:not([type=checkbox]):not([type=file]),.admin-field select,.admin-field textarea{box-sizing:border-box;width:100%;min-height:43px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px 12px;font:inherit;font-size:13px;color:var(--ink)}
+.admin-field textarea{resize:vertical;line-height:1.5}
+.admin-field small{display:block;margin-top:6px;color:rgba(36,35,33,.52);font-size:10px;line-height:1.45}
+.admin-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}
+.admin-field{min-width:0}
+.admin-field--wide{grid-column:1/-1}
+.admin-field--check{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;font-weight:700}
+.admin-field--check input{width:17px;height:17px;accent-color:var(--accent-deep)}
+.admin-image-row{display:flex;gap:14px;align-items:center;min-width:0}
+.admin-image-preview{width:110px;height:78px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px dashed var(--line);border-radius:10px;background:#faf9f6;color:rgba(36,35,33,.44);font-size:10px;text-align:center;flex-shrink:0}
+.admin-image-preview img{width:100%;height:100%;object-fit:cover}
+.admin-image-input{min-width:0}
+.admin-image-input input{max-width:100%;font-size:11px}
+.admin-upload-status{display:block;margin-top:5px;color:#34744d;font-size:11px}
+.admin-form-actions{display:flex;gap:9px;flex-wrap:wrap;padding-top:24px;margin-top:24px;border-top:1px solid var(--line)}
+@media(max-width:760px){
+ .admin-workspace{grid-template-columns:1fr;gap:18px}
+ .admin-sidebar{position:static;display:flex;gap:5px;flex-wrap:wrap;padding:10px}
+ .admin-sidebar .section-kicker{width:100%;padding:5px 8px}
+ .admin-tab{width:auto;flex:1;text-align:center;font-size:11px}
+ .admin-sidebar__note{width:100%;margin:8px;padding-top:10px}
+ .admin-edit-panel{padding:18px}
+ .admin-form-grid{grid-template-columns:1fr}
+ .admin-field--wide{grid-column:auto}
+ .admin-record{align-items:flex-start}
+ .admin-record__actions{flex-direction:column;align-items:end}
+ .admin-account-bar{align-items:flex-start}
+}
