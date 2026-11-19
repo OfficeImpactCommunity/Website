@@ -124,10 +124,13 @@ async function loadRecords() {
   state.entries = entriesResult.data || [];
   state.people = peopleResult.data || [];
   renderList();
+  renderContentPreview();
 }
 
 function currentRows() {
-  return state.tab === "entries" ? state.entries : state.people;
+  if (state.tab === "entries") return state.entries;
+  if (state.tab === "people") return state.people;
+  return [];
 }
 
 function groupedRows() {
@@ -142,6 +145,217 @@ function groupedRows() {
     draft: rows.find((r) => r.stage === "draft") || null,
     live: rows.find((r) => r.stage === "live") || null,
   }));
+}
+
+function previewStatus(group) {
+  if (group.draft) {
+    return {
+      label: "Draft preview",
+      className: "draft",
+      note: group.live
+        ? "A published version remains on the website until this draft is published."
+        : "Not visible on the public website until published.",
+    };
+  }
+  return {
+    label: "Live on website",
+    className: "live",
+    note: "This is the version currently shown on the public website.",
+  };
+}
+
+function previewDate(value) {
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(value || ""))) return null;
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function previewImage(value) {
+  return imagePreview(value);
+}
+
+function renderEntryPreview(group) {
+  const row = group.draft || group.live;
+  const data = row?.data || {};
+  const status = previewStatus(group);
+  const kind = row?.kind || data.kind || "story";
+  const showEvent = kind === "event" || kind === "event_story";
+  const showStory = kind === "story" || kind === "event_story";
+  const key = group.key;
+
+  const eventMarkup = showEvent ? (() => {
+    const date = previewDate(data.event_date);
+    if (!date) {
+      return `
+        <div class="admin-preview-placeholder">
+          <strong>${escapeHtml(data.title || key)}</strong>
+          <span>Not on the public calendar yet — add a valid event date.</span>
+        </div>`;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isPast = date < today;
+    const month = new Intl.DateTimeFormat("en-GB", { month: "short" }).format(date);
+    const metaParts = [data.event_type, data.event_time, data.event_location].filter(Boolean);
+    if (isPast || date.getFullYear() !== today.getFullYear()) metaParts.unshift(String(date.getFullYear()));
+
+    return `
+      <div class="admin-preview-event">
+        <div class="admin-preview-card__bar">
+          <span class="admin-preview-status admin-preview-status--${status.className}">${status.label}</span>
+          <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
+          <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(key)}">Edit</button>
+        </div>
+        <article class="event-item">
+          <div class="event-date"><strong>${date.getDate()}</strong><span>${escapeHtml(month)}</span></div>
+          <div class="event-info">
+            <h3>${escapeHtml(data.calendar_title || data.title || "Untitled event")}</h3>
+            <p>${escapeHtml(metaParts.join(" · "))}</p>
+          </div>
+          <span class="event-open" aria-hidden="true">&nearr;</span>
+        </article>
+      </div>`;
+  })() : "";
+
+  const storyMarkup = showStory ? (() => {
+    const dateValue = data.publication_date || data.event_date || "";
+    const storyDate = previewDate(dateValue);
+    const formattedDate = storyDate
+      ? new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(storyDate)
+      : "";
+    const summary = data.post_summary || data.event_summary || "";
+    const title = data.post_title || data.title || "Untitled story";
+    const source = String(data.source || "") === "LinkedIn" ? "LinkedIn highlight" : "Community story";
+    const isPast = previewDate(data.event_date) && previewDate(data.event_date) < new Date();
+    const imageValue = isPast
+      ? (data.post_image || data.event_image || data.venue_image)
+      : (data.post_image || data.venue_image || data.event_image);
+    const image = previewImage(imageValue);
+    const alt = data.post_image_alt || data.event_image_alt || title;
+    const featured = isTrue(data.featured_post);
+    const imageClass = image ? (featured ? " story-card--with-image" : " story-card--with-thumbnail") : "";
+
+    return `
+      <article class="story-card${imageClass}">
+        <div class="admin-preview-card__bar">
+          <span class="admin-preview-status admin-preview-status--${status.className}">${status.label}</span>
+          <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
+          <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(key)}">Edit</button>
+        </div>
+        ${image && featured ? `<div class="story-card__image"><img src="${escapeHtml(image)}" alt="${escapeHtml(alt)}" loading="lazy"></div>` : ""}
+        ${image && !featured ? `<div class="story-card__thumb"><img src="${escapeHtml(image)}" alt="${escapeHtml(alt)}" loading="lazy"></div>` : ""}
+        <div class="story-card__body">
+          <div class="story-card__meta"><span>${escapeHtml(data.category || "Update")}</span>${formattedDate ? `<span>${escapeHtml(formattedDate)}</span>` : ""}</div>
+          <h3>${escapeHtml(title)}</h3>
+          <p>${escapeHtml(summary || "Add a short introduction to preview the story card.")}</p>
+          <div class="story-card__footer"><span>${escapeHtml(source)}</span><span>Read &rarr;</span></div>
+        </div>
+      </article>`;
+  })() : "";
+
+  return eventMarkup + storyMarkup;
+}
+
+function renderPeoplePreview(group) {
+  const row = group.draft || group.live;
+  const person = row?.data || {};
+  const status = previewStatus(group);
+  const image = previewImage(person.image);
+  const professionalRole = [person.role, person.organization].filter(Boolean).join(" · ");
+  const officeRole = String(person.office_impact_role || "").trim();
+  const shortBio = String(person.bio || "").trim();
+
+  return `
+    <article class="person-card admin-preview-person">
+      <div class="admin-preview-card__bar">
+        <span class="admin-preview-status admin-preview-status--${status.className}">${status.label}</span>
+        <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
+        <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(group.key)}">Edit</button>
+      </div>
+      <div class="person-avatar">
+        <span>${escapeHtml(initials(person.name || ""))}</span>
+        ${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(person.name || "")}" loading="lazy">` : ""}
+      </div>
+      <div class="person-copy">
+        <h3>${escapeHtml(person.name || "Name not added")}</h3>
+        ${professionalRole ? `<div class="role">${escapeHtml(professionalRole)}</div>` : ""}
+        ${officeRole ? `<div class="office-impact-role">Office Impact · ${escapeHtml(officeRole)}</div>` : ""}
+        ${shortBio ? `<p class="person-short-bio">${escapeHtml(shortBio)}</p>` : ""}
+        <div class="person-actions"><span class="profile-link">View profile &rarr;</span></div>
+      </div>
+    </article>`;
+}
+
+function renderContentPreview() {
+  const panel = $("#contentPreviewPanel");
+  const container = $("#contentPreview");
+  if (!panel || !container) return;
+
+  if (state.tab === "access") {
+    panel.hidden = true;
+    return;
+  }
+
+  panel.hidden = false;
+  const groups = groupedRows();
+
+  if (!groups.length) {
+    container.innerHTML = '<div class="admin-empty">Add your first item to see how it will appear on the website.</div>';
+    return;
+  }
+
+  if (state.tab === "people") {
+    container.innerHTML = `
+      <div class="admin-preview-section">
+        <div class="admin-preview-section__heading">
+          <h3>Team page preview</h3>
+          <span>Same profile-card layout as the public website</span>
+        </div>
+        <div class="admin-preview-people-grid">${groups.map(renderPeoplePreview).join("")}</div>
+      </div>`;
+    return;
+  }
+
+  const eventGroups = groups.filter((group) => {
+    const row = group.draft || group.live;
+    const kind = row?.kind || row?.data?.kind || "story";
+    return kind === "event" || kind === "event_story";
+  });
+  const storyGroups = groups.filter((group) => {
+    const row = group.draft || group.live;
+    const kind = row?.kind || row?.data?.kind || "story";
+    return kind === "story" || kind === "event_story";
+  });
+
+  const storySorted = storyGroups.sort((a, b) => {
+    const aData = (a.draft || a.live)?.data || {};
+    const bData = (b.draft || b.live)?.data || {};
+    if (isTrue(aData.featured_post) !== isTrue(bData.featured_post)) return isTrue(aData.featured_post) ? -1 : 1;
+    const aDate = aData.publication_date || aData.event_date || "";
+    const bDate = bData.publication_date || bData.event_date || "";
+    return String(bDate).localeCompare(String(aDate));
+  });
+
+  container.innerHTML = `
+    <div class="admin-preview-section">
+      <div class="admin-preview-section__heading">
+        <h3>Events calendar preview</h3>
+        <span>Draft versions are shown here before publication</span>
+      </div>
+      <div class="admin-preview-events">
+        ${eventGroups.map(renderEntryPreview).join("") || '<div class="admin-preview-placeholder">No events in this section yet.</div>'}
+      </div>
+    </div>
+    <div class="admin-preview-section">
+      <div class="admin-preview-section__heading">
+        <h3>Stories section preview</h3>
+        <span>The public homepage displays up to six stories</span>
+      </div>
+      <div class="admin-preview-stories">
+        ${storySorted.slice(0, 6).map(renderEntryPreview).join("") || '<div class="admin-preview-placeholder">No stories in this section yet.</div>'}
+      </div>
+    </div>`;
 }
 
 function renderList() {
@@ -171,6 +385,7 @@ function renderList() {
         </div>
       </article>`;
   }).join("");
+  renderContentPreview();
 }
 
 function fieldValue(data, field) {
@@ -609,8 +824,10 @@ async function init() {
     const contentHeading = $("#contentHeading");
     const recordList = $("#recordList");
     const userAccessPanel = $("#userAccessPanel");
+    const contentPreviewPanel = $("#contentPreviewPanel");
     if (contentHeading) contentHeading.hidden = showingAccess;
     if (recordList) recordList.hidden = showingAccess;
+    if (contentPreviewPanel) contentPreviewPanel.hidden = showingAccess;
     if (userAccessPanel) userAccessPanel.hidden = !showingAccess;
     $("#newEntryActions").hidden = state.tab !== "entries";
     $("#newPersonActions").hidden = state.tab !== "people";
@@ -626,6 +843,7 @@ async function init() {
       }
     } else {
       renderList();
+      renderContentPreview();
     }
   }));
   $("#editorAccessForm").addEventListener("submit", async (event) => {
@@ -683,6 +901,10 @@ async function init() {
   $("#recordList").addEventListener("click", (event) => {
     const button = event.target.closest("[data-edit-key]");
     if (button) openExisting(button.dataset.editKey);
+  });
+  $("#contentPreview").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-preview-edit-key]");
+    if (button) openExisting(button.dataset.previewEditKey);
   });
   $("#contentForm").addEventListener("submit", (event) => event.preventDefault());
   $("#editorFields").addEventListener("change", (event) => {
