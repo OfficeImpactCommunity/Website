@@ -423,3 +423,18 @@
  .admin-preview-event .event-item{grid-template-columns:58px minmax(0,1fr)}
  .admin-preview-event .event-open{display:none}
 }
+
+/* Read-only detail views from the content review cards */
+.admin-detail-status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:18px 54px 0}
+.admin-detail-status>span:last-child{font-size:11px;color:rgba(36,35,33,.58)}
+.admin-preview-detail-button{background:var(--paper)}
+.admin-preview-detail-button:hover{background:var(--accent)}
+.admin-preview-dialog .dialog-body{padding-top:30px}
+.admin-preview-dialog .dialog-body h2{overflow-wrap:anywhere}
+.admin-preview-dialog .dialog-copy{overflow-wrap:anywhere}
+@media(max-width:640px){
+ .admin-detail-status{padding:14px 22px 0}
+ .admin-preview-dialog .dialog-body{padding:26px 24px 30px}
+ .admin-preview-dialog .person-dialog__header{grid-template-columns:110px minmax(0,1fr);gap:16px}
+ .admin-preview-dialog .person-dialog__avatar{border-radius:16px;font-size:38px}
+}
