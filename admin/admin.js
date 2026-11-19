@@ -535,7 +535,8 @@ async function activate(user) {
   try {
     const role = await checkAccess(user);
     state.role = role || null;
-    $("#accessTab").hidden = role !== "admin";
+    const accessTab = $("#accessTab");
+    if (accessTab) accessTab.hidden = role !== "admin";
 
     if (!role) {
       $("#accessEmail").textContent = user.email || "Unknown Google account";
@@ -562,22 +563,26 @@ async function init() {
     await supabase.auth.signOut();
     window.location.reload();
   });
-  $("#retryAccess").addEventListener("click", async () => {
-    const button = $("#retryAccess");
-    button.disabled = true;
-    button.textContent = "Checking…";
-    try {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) throw error;
-      if (data?.user) await activate(data.user);
-      else showView("loginView");
-    } catch (error) {
-      notify("Could not check access: " + error.message, true);
-    } finally {
-      button.disabled = false;
-      button.textContent = "Check access again";
-    }
-  });
+  // This control was added in the latest admin page. Keep it optional so a cached
+  // older HTML document cannot prevent the Google sign-in flow from starting.
+  const retryAccessButton = $("#retryAccess");
+  if (retryAccessButton) {
+    retryAccessButton.addEventListener("click", async () => {
+      retryAccessButton.disabled = true;
+      retryAccessButton.textContent = "Checking…";
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        if (data?.user) await activate(data.user);
+        else showView("loginView");
+      } catch (error) {
+        notify("Could not check access: " + error.message, true);
+      } finally {
+        retryAccessButton.disabled = false;
+        retryAccessButton.textContent = "Check access again";
+      }
+    });
+  }
 
   $("#signOutEditor").addEventListener("click", async () => {
     await supabase.auth.signOut();
@@ -601,9 +606,12 @@ async function init() {
     $(".admin-tab").forEach((item) => item.classList.toggle("is-active", item === tab));
 
     const showingAccess = state.tab === "access";
-    $("#contentHeading").hidden = showingAccess;
-    $("#recordList").hidden = showingAccess;
-    $("#userAccessPanel").hidden = !showingAccess;
+    const contentHeading = $("#contentHeading");
+    const recordList = $("#recordList");
+    const userAccessPanel = $("#userAccessPanel");
+    if (contentHeading) contentHeading.hidden = showingAccess;
+    if (recordList) recordList.hidden = showingAccess;
+    if (userAccessPanel) userAccessPanel.hidden = !showingAccess;
     $("#newEntryActions").hidden = state.tab !== "entries";
     $("#newPersonActions").hidden = state.tab !== "people";
     $("#editorPanel").hidden = true;
