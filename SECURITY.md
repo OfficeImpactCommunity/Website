@@ -1,79 +1,39 @@
-# Security notes
+# Security overview
 
-This site has a deliberately small attack surface: it is a static GitHub Pages site with no backend, database, user accounts or runtime secrets.
+This document summarises the main safeguards and operating responsibilities for the Office Impact Community website.
 
-## Accounts and permissions
+## Public information
 
-- Keep the repository dedicated to Office Impact.
-- Restrict the Pages CMS GitHub App to this repository only.
-- Use individual Pages CMS collaborator accounts; do not share passwords.
-- Require 2FA or passkeys for GitHub owners and administrators.
-- Remove editor access promptly when someone leaves the organisation.
-- Keep at least two trusted technical administrators for recovery.
+The website is hosted on GitHub Pages and its source repository is public. Treat committed files and Git history as public, including legacy content files and records not currently displayed on the site.
 
-## Publishing model
+Do not commit passwords, API secrets, private drafts, personal contact details, internal notes or confidential event information.
 
-A Pages CMS save writes to `main`, which makes it a publishing credential. Only invite people who should be able to update the public website.
+## Sign-in and permissions
 
-Git history provides rollback, but it does not provide approval before publishing. If the organisation later needs an editorial approval workflow, move CMS changes to a review branch / pull-request workflow or use a CMS with draft/publish roles.
+- Administration uses Google sign-in through Supabase Auth.
+- Access is granted individually to approved Editor and Admin accounts.
+- Editors can manage drafts. Publishing and access management are restricted to Admins.
+- Permissions are enforced by database access controls, not by whether an Admin link is visible in the website.
+- Remove or disable access promptly when it is no longer needed.
 
-## Public data warning
+## Content and media
 
-Everything committed to this public repository should be treated as public, including records with `published: false`.
+The public site reads published content; draft content is restricted to approved editors. Content should be reviewed before publication.
 
-Do not store:
+User-entered rich text is sanitised before display, external links are restricted to HTTPS, and the website applies a Content Security Policy.
 
-- private or embargoed drafts;
-- private email addresses or phone numbers;
-- internal notes;
-- private meeting or event links;
-- credentials, tokens or API keys;
-- confidential documents.
+Images uploaded through Admin are intended for public display. Upload only approved images and check for unnecessary photo metadata before publishing.
 
-## Content sanitisation
+## Credentials and deployment
 
-Article and event bodies are edited as rich text. Before rendering, `app.js` parses the HTML and keeps only a limited set of formatting elements. Scripts, embeds, forms, SVG and other active content are discarded, and attributes are removed except for validated links.
+The browser uses a Supabase publishable key. Never put a Supabase secret/service key, database password, Google OAuth client secret or deployment token in website files or public commits.
 
-This is defence in depth in addition to the site's Content Security Policy.
+Deployment credentials belong in protected GitHub Actions secrets. If a credential is exposed, revoke or rotate it promptly; removing the visible file or reverting a commit is not sufficient.
 
-## URLs
+## Operational practices
 
-External links stored in CMS fields are rendered only if they use HTTPS. Invalid or non-HTTPS URLs are ignored by the frontend.
-
-## Content Security Policy
-
-`index.html` uses a restrictive CSP:
-
-- scripts only from the same origin;
-- images only from the same origin or data URLs;
-- network requests only to the same origin;
-- no frames, plugins, media or web workers;
-- no forms;
-- no base URL override.
-
-Inline CSS is allowed because the subtle pointer-tilt effect updates CSS custom properties dynamically. Inline JavaScript remains prohibited.
-
-## GitHub Pages and domain
-
-When a custom domain is connected:
-
-- verify the domain in the owning GitHub organisation/account;
-- enable `Enforce HTTPS`;
-- avoid wildcard DNS records unless they are genuinely required;
-- remove stale DNS records when changing hosting providers.
-
-## Images and privacy
-
-Use approved images. Phone photos can contain EXIF metadata, including device information and sometimes location. Remove unnecessary metadata before publishing sensitive images.
-
-## Incident recovery
-
-If incorrect or malicious content is published:
-
-1. revoke the compromised Pages CMS / GitHub access;
-2. revert the offending Git commit;
-3. verify Pages has redeployed the reverted version;
-4. review recent Git commits and Pages CMS collaborators;
-5. rotate any credentials if a secret was accidentally committed.
-
-If a secret was committed to a public repository, reverting the commit alone is not enough. Revoke/rotate the secret immediately because Git history may still expose it.
+- Use individual accounts rather than shared logins.
+- Protect GitHub and Google accounts with strong authentication.
+- Review authorised Admins and Editors periodically.
+- Keep more than one trusted administrator for account recovery.
+- If incorrect or malicious content is published, disable affected access, correct or revert the content, verify the redeployment and rotate any exposed credentials.
