@@ -219,6 +219,7 @@ function renderEntryPreview(group, mode = "both") {
           <span class="admin-preview-status admin-preview-status--${status.className}">${status.label}</span>
           <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
           <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(key)}">Edit</button>
+          <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(key)}" data-preview-detail-kind="event">View details</button>
         </div>
         <article class="event-item">
           <div class="event-date"><strong>${date.getDate()}</strong><span>${escapeHtml(month)}</span></div>
@@ -255,6 +256,7 @@ function renderEntryPreview(group, mode = "both") {
           <span class="admin-preview-status admin-preview-status--${status.className}">${status.label}</span>
           <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
           <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(key)}">Edit</button>
+          <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(key)}" data-preview-detail-kind="story">View details</button>
         </div>
         ${image && featured ? `<div class="story-card__image"><img src="${escapeHtml(image)}" alt="${escapeHtml(alt)}" loading="lazy"></div>` : ""}
         ${image && !featured ? `<div class="story-card__thumb"><img src="${escapeHtml(image)}" alt="${escapeHtml(alt)}" loading="lazy"></div>` : ""}
@@ -285,6 +287,7 @@ function renderPeoplePreview(group) {
         <span class="admin-preview-status admin-preview-status--${status.className}">${status.label}</span>
         <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
         <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(group.key)}">Edit</button>
+        <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(group.key)}" data-preview-detail-kind="person">View details</button>
       </div>
       <div class="person-avatar">
         <span>${escapeHtml(initials(person.name || ""))}</span>
@@ -369,6 +372,268 @@ function renderContentPreview() {
         ${storySorted.slice(0, 6).map((group) => renderEntryPreview(group, "story")).join("") || '<div class="admin-preview-placeholder">No stories in this section yet.</div>'}
       </div>
     </div>`;
+}
+
+
+function adminDetailText(value) {
+  return String(value || "").trim();
+}
+
+function adminDetailDate(value) {
+  const date = previewDate(value);
+  return date ? new Intl.DateTimeFormat("en-GB", {
+    day: "numeric", month: "long", year: "numeric"
+  }).format(date) : "";
+}
+
+function adminDetailUrl(value) {
+  const raw = adminDetailText(value);
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function adminDetailRichText(value) {
+  const raw = adminDetailText(value);
+  if (!raw) return "";
+  const parser = new DOMParser();
+  const doc = parser.parseFromString("<body>" + raw + "</body>", "text/html");
+  const allowed = new Set(["P","BR","STRONG","B","EM","I","UL","OL","LI","H3","H4","BLOCKQUOTE","A"]);
+  const drop = new Set(["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","SVG","MATH","FORM","INPUT","TEXTAREA","BUTTON"]);
+  $("*", doc.body).forEach((el) => {
+    const tag = el.tagName;
+    if (drop.has(tag)) { el.remove(); return; }
+    if (!allowed.has(tag)) { el.replaceWith(...el.childNodes); return; }
+    const href = tag === "A" ? (el.getAttribute("href") || "") : "";
+    Array.from(el.attributes).forEach((attr) => el.removeAttribute(attr.name));
+    if (tag === "A" && href) {
+      try {
+        const url = new URL(href, window.location.href);
+        if (url.protocol === "https:" || url.origin === window.location.origin) {
+          el.setAttribute("href", url.href);
+          el.setAttribute("target", "_blank");
+          el.setAttribute("rel", "noopener noreferrer");
+        }
+      } catch { /* Invalid links remain plain text. */ }
+    }
+  });
+  return doc.body.innerHTML;
+}
+
+function adminDetailBody(value) {
+  const raw = adminDetailText(value);
+  if (!raw) return "";
+  if (/<[a-z][\s\S]*>/i.test(raw)) return adminDetailRichText(raw);
+  return "<p>" + escapeHtml(raw) + "</p>";
+}
+
+function adminFirstDetailContent(values) {
+  for (const value of values) {
+    const raw = adminDetailText(value);
+    if (!raw) continue;
+    const visible = raw.replace(/&nbsp;|&#160;|&#xA0;/gi, " ")
+      .replace(/<br\s*\/?\s*>/gi, "").replace(/<[^>]*>/g, "").trim();
+    if (visible) return raw;
+  }
+  return "";
+}
+
+function adminDetailImage(value, alt, extraClass) {
+  const src = imagePreview(value);
+  if (!src) return "";
+  return '<figure class="story-dialog__image ' + (extraClass || "") + '">' +
+    '<img src="' + escapeHtml(src) + '" alt="' + escapeHtml(alt || "") + '">' +
+    '</figure>';
+}
+
+function adminDetailLocation(data, title, online, past) {
+  if (online || past) return "";
+  const venue = adminDetailText(data.event_location);
+  const address = adminDetailText(data.address);
+  const venueImage = imagePreview(data.venue_image);
+  const panels = [];
+  if (venue || address) {
+    panels.push('<div class="event-location__panel event-location__details">' +
+      '<span class="event-location__label">Location</span>' +
+      (venue ? '<strong>' + escapeHtml(venue) + '</strong>' : '') +
+      (address ? '<p>' + escapeHtml(address) + '</p>' : '') + '</div>');
+  }
+  if (venueImage) {
+    panels.push('<figure class="event-location__panel event-location__image">' +
+      '<img src="' + escapeHtml(venueImage) + '" alt="' + escapeHtml(venue || title) + ' venue" loading="lazy">' +
+      '</figure>');
+  }
+  const query = adminDetailText(data.map_query) || address;
+  if (query) {
+    const mapUrl = "https://www.google.com/maps?q=" + encodeURIComponent(query) + "&output=embed";
+    panels.push('<div class="event-location__panel event-location__map">' +
+      '<iframe src="' + escapeHtml(mapUrl) + '" title="Map for ' + escapeHtml(title) +
+      '" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe></div>');
+  }
+  if (!panels.length) return "";
+  return '<div class="event-location event-location--' + Math.min(3, panels.length) + '">' +
+    panels.join("") + '</div>';
+}
+
+function openAdminPreviewDialog(content, status) {
+  const dialog = $("#adminPreviewDialog");
+  const target = $("#adminPreviewDialogContent");
+  if (!dialog || !target) {
+    notify("The detail preview could not be opened.", true);
+    return;
+  }
+  target.innerHTML =
+    '<div class="admin-detail-status">' +
+      '<span class="admin-preview-status admin-preview-status--' + status.className + '">' +
+        escapeHtml(status.label) + '</span>' +
+      '<span>' + escapeHtml(status.note) + '</span>' +
+    '</div>' + content;
+  if (typeof dialog.showModal === "function") dialog.showModal();
+  $("img", target).forEach((img) => img.addEventListener("error", () => {
+    const figure = img.closest(".story-dialog__image");
+    if (figure) figure.remove();
+    else img.remove();
+  }, { once: true }));
+}
+
+function openPreviewEntryDetail(key, mode) {
+  const group = groupedRows().find((item) => item.key === key);
+  const row = group && (group.draft || group.live);
+  if (!row) return;
+  const data = Object.assign({}, row.data || {}, {
+    id: key,
+    kind: row.kind || (row.data && row.data.kind) || "story"
+  });
+  const status = previewStatus(group);
+  const eventDate = previewDate(data.event_date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const past = Boolean(eventDate && eventDate < today);
+  const online = /\b(online|virtual|remote|zoom|microsoft teams|google meet)\b/i.test(
+    (data.event_location || "") + " " + (data.event_type || "")
+  );
+  const registration = adminDetailUrl(data.registration_url);
+  const source = adminDetailUrl(data.source_url);
+  const eventMeta = [
+    adminDetailDate(data.event_date),
+    adminDetailText(data.event_time),
+    online ? "" : adminDetailText(data.event_location)
+  ].filter(Boolean).join(" · ");
+
+  const isStory = mode === "story";
+  const title = isStory
+    ? (adminDetailText(data.post_title) || adminDetailText(data.title) || "Untitled story")
+    : (adminDetailText(data.calendar_title) || adminDetailText(data.title) || "Untitled event");
+  const bodyValue = isStory
+    ? adminFirstDetailContent([data.post_body, data.event_details, data.post_summary, data.event_summary])
+    : (past
+      ? adminFirstDetailContent([data.post_body, data.event_details, data.post_summary, data.event_summary])
+      : adminFirstDetailContent([data.event_details, data.event_summary, data.post_body, data.post_summary]));
+  const body = adminDetailBody(bodyValue);
+  const imageValue = isStory
+    ? (past
+      ? adminFirstDetailContent([data.post_image, data.event_image, data.venue_image])
+      : adminFirstDetailContent([data.post_image, data.venue_image, data.event_image]))
+    : (past
+      ? adminFirstDetailContent([data.event_image, data.post_image, data.venue_image])
+      : (online
+        ? adminFirstDetailContent([data.post_image, data.event_image])
+        : adminFirstDetailContent([data.venue_image, data.post_image, data.event_image])));
+  const alt = isStory
+    ? (data.post_image_alt || data.event_image_alt || title)
+    : (data.event_image_alt || data.post_image_alt || title);
+  const hasVenueImage = !online && Boolean(imagePreview(data.venue_image));
+  const imageBlock = isStory
+    ? adminDetailImage(imageValue, alt, "")
+    : ((past || !hasVenueImage) ? adminDetailImage(imageValue, alt, "entry-event-photo") : "");
+
+  let eventInfo = "";
+  if (isStory && eventDate) {
+    eventInfo = '<div class="entry-event-info">' +
+      '<span class="entry-event-info__label">' + (past ? "Past event" : "Upcoming event") + '</span>' +
+      '<strong>' + escapeHtml(data.calendar_title || data.title || "") + '</strong>' +
+      (eventMeta ? '<p>' + escapeHtml(eventMeta) + '</p>' : '') +
+      '</div>';
+  } else if (!isStory && online) {
+    eventInfo = '<div class="dialog-online-line"><strong>Online</strong>' +
+      (eventMeta ? '<span>' + escapeHtml(eventMeta) + '</span>' : '') +
+      (!past && registration ? '<a href="' + escapeHtml(registration) +
+        '" target="_blank" rel="noopener noreferrer">Register here &nearr;</a>' : '') +
+      '</div>';
+  }
+
+  const location = adminDetailLocation(data, title, online, past);
+  let content = '<div class="dialog-body">' +
+    '<span class="section-kicker">' + escapeHtml(isStory ? (data.category || "Story") : (data.event_type || "Community event")) + '</span>' +
+    '<h2>' + escapeHtml(title) + '</h2>';
+
+  if (isStory) {
+    const postDate = adminDetailDate(data.publication_date || data.event_date);
+    content += (postDate || data.source)
+      ? '<div class="dialog-meta">' + (postDate ? '<span>' + escapeHtml(postDate) + '</span>' : '') +
+        (data.source ? '<span>· ' + escapeHtml(data.source) + '</span>' : '') + '</div>'
+      : '';
+  } else {
+    content += eventMeta ? '<div class="dialog-meta"><span>' + escapeHtml(eventMeta) + '</span></div>' : '';
+  }
+
+  content += imageBlock + eventInfo + (body ? '<div class="dialog-copy">' + body + '</div>' : '') + location;
+
+  if (!past && registration && (!online || isStory)) {
+    content += '<a class="dialog-source" href="' + escapeHtml(registration) +
+      '" target="_blank" rel="noopener noreferrer">Event details / registration &nearr;</a>';
+  }
+  if (source) {
+    content += '<a class="dialog-source" href="' + escapeHtml(source) +
+      '" target="_blank" rel="noopener noreferrer">View original ' +
+      escapeHtml(data.source || "source") + ' &nearr;</a>';
+  }
+  content += '</div>';
+  openAdminPreviewDialog(content, status);
+}
+
+function openPreviewPersonDetail(key) {
+  const group = groupedRows().find((item) => item.key === key);
+  const row = group && (group.draft || group.live);
+  if (!row) return;
+  const person = row.data || {};
+  const status = previewStatus(group);
+  const image = imagePreview(person.image);
+  const role = [person.role, person.organization].filter(Boolean).join(" · ");
+  const officeRole = adminDetailText(person.office_impact_role);
+  const bio = adminDetailText(person.bio_long) || adminDetailText(person.bio);
+  const linkedin = adminDetailUrl(person.linkedin_url);
+  const content = '<div class="dialog-body person-dialog">' +
+    '<div class="person-dialog__header">' +
+      '<div class="person-dialog__avatar"><span>' + escapeHtml(initials(person.name || "")) + '</span>' +
+      (image ? '<img src="' + escapeHtml(image) + '" alt="' + escapeHtml(person.name || "") + '">' : '') +
+      '</div><div><span class="section-kicker">Community profile</span>' +
+      '<h2>' + escapeHtml(person.name || "Name not added") + '</h2>' +
+      (role ? '<div class="dialog-meta"><span>' + escapeHtml(role) + '</span></div>' : '') +
+      (officeRole ? '<div class="person-dialog__office-role"><span>Office Impact</span><strong>' +
+        escapeHtml(officeRole) + '</strong></div>' : '') +
+      '</div></div>' +
+    '<div class="dialog-copy person-dialog__bio">' +
+      (bio ? '<p>' + escapeHtml(bio) + '</p>' : '<p>Profile details will be added soon.</p>') +
+    '</div>' +
+    (linkedin ? '<a class="dialog-source" href="' + escapeHtml(linkedin) +
+      '" target="_blank" rel="noopener noreferrer">View LinkedIn profile &nearr;</a>' : '') +
+    '</div>';
+  openAdminPreviewDialog(content, status);
+}
+
+function setupAdminPreviewDialog() {
+  const dialog = $("#adminPreviewDialog");
+  const close = $("#adminPreviewDialogClose");
+  if (!dialog || !close) return;
+  close.addEventListener("click", () => dialog.close());
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
 }
 
 function renderList() {
@@ -797,6 +1062,7 @@ async function activate(user) {
 }
 
 async function init() {
+  setupAdminPreviewDialog();
   $("#googleSignIn").addEventListener("click", startGoogleLogin);
   $("#signOutAccess").addEventListener("click", async () => {
     await supabase.auth.signOut();
@@ -927,8 +1193,17 @@ async function init() {
     if (button) openExisting(button.dataset.editKey);
   });
   $("#contentPreview").addEventListener("click", (event) => {
-    const button = event.target.closest("[data-preview-edit-key]");
-    if (button) openExisting(button.dataset.previewEditKey);
+    const editButton = event.target.closest("[data-preview-edit-key]");
+    if (editButton) {
+      openExisting(editButton.dataset.previewEditKey);
+      return;
+    }
+    const detailButton = event.target.closest("[data-preview-detail-key]");
+    if (!detailButton) return;
+    const key = detailButton.dataset.previewDetailKey;
+    const kind = detailButton.dataset.previewDetailKind;
+    if (kind === "person") openPreviewPersonDetail(key);
+    else openPreviewEntryDetail(key, kind === "story" ? "story" : "event");
   });
   $("#contentForm").addEventListener("submit", (event) => event.preventDefault());
   $("#editorFields").addEventListener("change", (event) => {
