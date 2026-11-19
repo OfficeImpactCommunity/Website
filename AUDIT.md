@@ -135,6 +135,14 @@ The Supabase advisor reported:
 - A browser-based penetration test, external scanner, dependency vulnerability scan, and formal RLS test suite were not run.
 - The audit does not certify the application as penetration-tested or compliant with a formal security standard.
 
+## Branch and workflow observations
+
+- At audit time, `DevelopSupabase` was **91 commits ahead and 1 commit behind `main`** (diverged), so a production merge is not a simple fast-forward. Reconcile and review the one production-side commit before opening a merge request.
+- `DevelopSupabase` was 52 commits ahead of the older `Develop` branch. Avoid treating the two development branches as interchangeable.
+- The active preview deployment workflow runs only for `DevelopSupabase`; `DevelopAudit` does not auto-deploy.
+- The retained `.pages.yml` still describes a Pages CMS production action that points to `publish-production.yml`, but that workflow file is absent from the repository. This is another reason to confirm the Pages CMS integration is retired before removing the config.
+- No `package.json`, lockfile, build tool, lint configuration or automated frontend test suite was found. The current site is served directly as static assets; JavaScript syntax checks and manual smoke tests are not a substitute for repeatable tests.
+
 ## Repository cleanup performed on this branch
 
 The following files were verified as unused by the active website code and current Pages CMS content paths, and removed from `DevelopAudit` only:
