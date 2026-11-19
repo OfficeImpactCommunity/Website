@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: preview-deployment
+  group: preview-deployment-develop-supabase
   cancel-in-progress: true
 
 jobs:
