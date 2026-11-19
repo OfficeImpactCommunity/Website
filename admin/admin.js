@@ -1202,8 +1202,13 @@ async function init() {
     if (!detailButton) return;
     const key = detailButton.dataset.previewDetailKey;
     const kind = detailButton.dataset.previewDetailKind;
-    if (kind === "person") openPreviewPersonDetail(key);
-    else openPreviewEntryDetail(key, kind === "story" ? "story" : "event");
+    try {
+      if (kind === "person") openPreviewPersonDetail(key);
+      else openPreviewEntryDetail(key, kind === "story" ? "story" : "event");
+    } catch (error) {
+      console.error("Content detail preview failed:", error);
+      notify("Could not open this detail preview: " + (error?.message || "Unknown error"), true);
+    }
   });
   $("#contentForm").addEventListener("submit", (event) => event.preventDefault());
   $("#editorFields").addEventListener("change", (event) => {
