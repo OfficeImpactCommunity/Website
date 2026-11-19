@@ -1,3 +1,5 @@
+import { supabase, SUPABASE_URL } from "./supabase-client.js";
+
 const state = {
   entries: [],
   people: [],
@@ -145,7 +147,19 @@ function assetUrl(value) {
     : String(value?.src || value?.url || value?.path || "").trim();
 
   if (!raw) return "";
-  if (/^(https?:|data:|blob:)/i.test(raw)) return "";
+  if (/^https?:/i.test(raw)) {
+    try {
+      const url = new URL(raw);
+      if (
+        url.origin === SUPABASE_URL &&
+        url.pathname.startsWith("/storage/v1/object/public/office-impact-media/")
+      ) return url.href;
+    } catch {
+      return "";
+    }
+    return "";
+  }
+  if (/^(data:|blob:)/i.test(raw)) return "";
   if (raw.includes("..")) return "";
 
   let normalized = raw.replace(/^\.\//, "").replace(/^\//, "");
@@ -185,6 +199,95 @@ function entryPostTitle(entry) {
   return cleanText(entry.post_title) || cleanText(entry.title) || "Untitled";
 }
 
+function firstContent(...values) {
+  return values.map((value) => {
+    const raw = cleanText(value);
+    if (!raw) return "";
+
+    // Rich-text editors may save an empty field as <p></p> or <p><br></p>.
+    // Treat those placeholders as blank so the fallback can take effect.
+    const visibleText = raw
+      .replace(/&nbsp;|&#160;|&#xA0;/gi, " ")
+      .replace(/<br\s*\/?>/gi, "")
+      .replace(/<[^>]*>/g, "")
+      .trim();
+
+    return visibleText ? raw : "";
+  }).find(Boolean) || "";
+}
+
+// Shared event/story records can keep one description and one image.
+// Prefer the field that best fits the current context, then fall back.
+function entryStorySummary(entry) {
+  return firstContent(entry.post_summary, entry.event_summary);
+}
+
+function entryStoryBody(entry) {
+  return firstContent(entry.post_body, entry.event_details, entry.post_summary, entry.event_summary);
+}
+
+function entryEventBody(entry, past = false) {
+  return past
+    ? firstContent(entry.post_body, entry.event_details, entry.post_summary, entry.event_summary)
+    : firstContent(entry.event_details, entry.event_summary, entry.post_body, entry.post_summary);
+}
+
+function entryStoryImage(entry, past = false) {
+  return past
+    ? firstContent(entry.post_image, entry.event_image, entry.venue_image)
+    : firstContent(entry.post_image, entry.venue_image, entry.event_image);
+}
+
+function entryEventImage(entry, past = false) {
+  return past
+    ? firstContent(entry.event_image, entry.post_image, entry.venue_image)
+    : firstContent(entry.venue_image, entry.post_image, entry.event_image);
+}
+
+function isOnlineEvent(entry) {
+  const location = cleanText(entry.event_location).toLowerCase();
+  const type = cleanText(entry.event_type).toLowerCase();
+
+  return /\b(online|virtual|remote|zoom|microsoft teams|google meet)\b/.test(location) ||
+    type === "online event";
+}
+
+function buildOnlineEventLine(entry, past, registrationUrl = "", includeMeta = false) {
+  const meta = includeMeta
+    ? [formatDate(entry.event_date), cleanText(entry.event_time)].filter(Boolean).join(" · ")
+    : "";
+  const registrationLink = !past && registrationUrl
+    ? `<a href="${escapeHtml(registrationUrl)}" target="_blank" rel="noopener noreferrer">Register here &nearr;</a>`
+    : "";
+
+  return `
+    <div class="dialog-online-line">
+      <strong>Online</strong>
+      ${meta ? `<span>${escapeHtml(meta)}</span>` : ""}
+      ${registrationLink}
+    </div>`;
+}
+
+function entryStoryImageAlt(entry, imageValue) {
+  if (imageValue && cleanText(entry.post_image) === imageValue) {
+    return firstContent(entry.post_image_alt) || entryPostTitle(entry);
+  }
+  if (imageValue && cleanText(entry.event_image) === imageValue) {
+    return firstContent(entry.event_image_alt) || entryPostTitle(entry);
+  }
+  return entryPostTitle(entry);
+}
+
+function entryEventImageAlt(entry, imageValue) {
+  if (imageValue && cleanText(entry.event_image) === imageValue) {
+    return firstContent(entry.event_image_alt) || entryCalendarTitle(entry);
+  }
+  if (imageValue && cleanText(entry.post_image) === imageValue) {
+    return firstContent(entry.post_image_alt) || entryCalendarTitle(entry);
+  }
+  return entryCalendarTitle(entry);
+}
+
 function entryCalendarTitle(entry) {
   return cleanText(entry.calendar_title) || cleanText(entry.title) || entryPostTitle(entry);
 }
@@ -193,13 +296,40 @@ function entryPublicationDate(entry) {
   return cleanText(entry.publication_date) || cleanText(entry.event_date);
 }
 
+function entryKind(entry) {
+  const kind = cleanText(entry.kind);
+
+  if (
+    kind === "event" ||
+    kind === "story" ||
+    kind === "event_story"
+  ) {
+    return kind;
+  }
+
+  // Backwards compatibility with the old content model.
+  const inCalendar = isTrue(entry.show_in_calendar);
+  const inPosts = isTrue(entry.show_in_posts);
+
+  if (inCalendar && inPosts) return "event_story";
+  if (inCalendar) return "event";
+  return "story";
+}
+
 function entryShowsInPosts(entry) {
-  return isTrue(entry.show_in_posts);
+  const kind = entryKind(entry);
+  return kind === "story" || kind === "event_story";
 }
 
 function entryShowsInCalendar(entry) {
-  return isTrue(entry.show_in_calendar) && isDateString(entry.event_date);
+  const kind = entryKind(entry);
+
+  return (
+    (kind === "event" || kind === "event_story") &&
+    isDateString(entry.event_date)
+  );
 }
+
 
 function entryIsPublished(entry) {
   return !isFalse(entry.published);
@@ -238,20 +368,69 @@ async function loadJson(path) {
   return response.json();
 }
 
+async function loadSupabaseContent() {
+  const [entriesResult, peopleResult] = await Promise.all([
+    supabase.from("content_items").select("content_key, kind, data").eq("stage", "live"),
+    supabase.from("people").select("person_key, data").eq("stage", "live"),
+  ]);
+
+  if (entriesResult.error) throw entriesResult.error;
+  if (peopleResult.error) throw peopleResult.error;
+
+  // The database stage is the publication source of truth. A legacy
+  // published flag inside the JSON payload must not hide a row already
+  // published as live in Supabase.
+  state.entries = (entriesResult.data || [])
+    .map((row) => ({
+      ...(row.data || {}),
+      id: row.content_key,
+      kind: row.kind,
+      published: true,
+    }));
+
+  state.people = (peopleResult.data || [])
+    .map((row) => ({
+      ...(row.data || {}),
+      id: row.person_key,
+      published: true,
+    }));
+}
+
+async function loadLegacyContent() {
+  const [entriesData, people] = await Promise.all([
+    loadJson("./content/entries.json"),
+    loadJson("./content/people.json"),
+  ]);
+
+  const entries = Array.isArray(entriesData)
+    ? entriesData
+    : Array.isArray(entriesData?.entries)
+      ? entriesData.entries
+      : [];
+
+  state.entries = entries.filter(entryIsPublished);
+  state.people = Array.isArray(people)
+    ? people.filter((item) => !isFalse(item.published))
+    : [];
+}
+
+function setupAdminNavigation() {
+  // The link is deliberately visible to everyone; the admin page enforces access.
+  const footerLink = $("#adminNavLink");
+  const headerLink = $(".nav-admin-link");
+  if (footerLink) footerLink.hidden = false;
+  if (headerLink) headerLink.hidden = false;
+}
+
 async function init() {
   try {
-    const [entries, people] = await Promise.all([
-      loadJson("./content/entries.json"),
-      loadJson("./content/people.json"),
-    ]);
-
-    state.entries = Array.isArray(entries)
-      ? entries.filter(entryIsPublished)
-      : [];
-
-    state.people = Array.isArray(people)
-      ? people.filter((item) => !isFalse(item.published))
-      : [];
+    try {
+      await loadSupabaseContent();
+    } catch (supabaseError) {
+      // Keep the existing static JSON files as a temporary migration fallback.
+      console.error("Supabase content could not be loaded; using the static fallback.", supabaseError);
+      await loadLegacyContent();
+    }
 
     state.calendarDate = startOfMonth(startOfToday());
 
@@ -260,6 +439,7 @@ async function init() {
     renderStories();
     renderPeople();
     setupMotion();
+    setupAdminNavigation();
   } catch (error) {
     console.error(error);
     showLoadErrors();
@@ -509,8 +689,9 @@ function renderStories() {
   }
 
   container.innerHTML = posts.slice(0, 6).map((entry, index) => {
-    const image = assetUrl(entry.post_image);
-    const imageAlt = cleanText(entry.post_image_alt) || entryPostTitle(entry);
+    const imageValue = entryStoryImage(entry, entryIsPastEvent(entry));
+    const image = assetUrl(imageValue);
+    const imageAlt = entryStoryImageAlt(entry, imageValue);
     const postDate = entryPublicationDate(entry);
     const isFeaturedCard = index === 0 && isTrue(entry.featured_post);
     const showFeaturedImage = Boolean(image && isFeaturedCard);
@@ -534,7 +715,7 @@ function renderStories() {
         <div class="story-card__body">
           <div class="story-card__meta"><span>${escapeHtml(cleanText(entry.category) || "Update")}</span>${postDate ? `<span>${escapeHtml(formatDate(postDate, { day: "2-digit", month: "short", year: "numeric" }))}</span>` : ""}</div>
           <h3>${escapeHtml(entryPostTitle(entry))}</h3>
-          <p>${escapeHtml(cleanText(entry.post_summary))}</p>
+          <p>${escapeHtml(entryStorySummary(entry))}</p>
           <div class="story-card__footer">
             <span>${cleanText(entry.source) === "LinkedIn" ? "LinkedIn highlight" : "Community story"}</span>
             <button type="button" data-entry-post="${escapeHtml(cleanText(entry.id))}">Read &rarr;</button>
@@ -680,6 +861,9 @@ function openPerson(index) {
 }
 
 function buildFutureLocationBlock(entry) {
+  // Online events need no physical venue panel, address card or map.
+  if (isOnlineEvent(entry)) return "";
+
   const venue = cleanText(entry.event_location);
   const address = cleanText(entry.address);
   const mapQuery = cleanText(entry.map_query) || address;
@@ -721,8 +905,12 @@ function buildFutureLocationBlock(entry) {
   return `<div class="event-location event-location--${count}">${panels.join("")}</div>`;
 }
 
-function buildEntryEventInfo(entry, past) {
+function buildEntryEventInfo(entry, past, registrationUrl = "") {
   if (!entryShowsInCalendar(entry)) return "";
+  if (isOnlineEvent(entry)) {
+    return buildOnlineEventLine(entry, past, registrationUrl, true);
+  }
+
   const meta = [formatDate(entry.event_date), cleanText(entry.event_time), cleanText(entry.event_location)].filter(Boolean).join(" · ");
   return `
     <div class="entry-event-info">
@@ -750,20 +938,32 @@ function openEntry(id, mode = "post") {
   const sourceUrl = safeExternalUrl(entry.source_url);
   const registrationUrl = safeExternalUrl(entry.registration_url);
   const eventMeta = hasEvent
-    ? [formatDate(entry.event_date), cleanText(entry.event_time), cleanText(entry.event_location)].filter(Boolean).join(" · ")
+    ? [
+        formatDate(entry.event_date),
+        cleanText(entry.event_time),
+        isOnlineEvent(entry) ? "" : cleanText(entry.event_location),
+      ].filter(Boolean).join(" · ")
     : "";
 
   if (mode === "event") {
-    const eventBodyRaw = past
-      ? cleanText(entry.post_body) || cleanText(entry.event_details) || cleanText(entry.post_summary) || cleanText(entry.event_summary)
-      : cleanText(entry.event_details) || cleanText(entry.event_summary) || cleanText(entry.post_body) || cleanText(entry.post_summary);
+    const eventBodyRaw = entryEventBody(entry, past);
     const eventBody = eventBodyRaw
       ? (/<[a-z][\s\S]*>/i.test(eventBodyRaw) ? sanitizeRichText(eventBodyRaw) : `<p>${escapeHtml(eventBodyRaw)}</p>`)
       : "";
-    const pastImageValue = cleanText(entry.event_image) || cleanText(entry.post_image);
-    const pastImageAlt = cleanText(entry.event_image_alt) || cleanText(entry.post_image_alt) || entryCalendarTitle(entry);
-    const media = past ? buildDialogImage(pastImageValue, pastImageAlt, "entry-event-photo") : "";
+    const eventImageValue = isOnlineEvent(entry) && !past
+      ? firstContent(entry.post_image, entry.event_image)
+      : entryEventImage(entry, past);
+    const eventImageAlt = entryEventImageAlt(entry, eventImageValue);
+    // Upcoming venue imagery is already rendered in the location panel.
+    // Online events have no venue panel, so their available image stays in the dialog.
+    const hasVenueImage = !isOnlineEvent(entry) && Boolean(assetUrl(entry.venue_image));
+    const media = past || !hasVenueImage
+      ? buildDialogImage(eventImageValue, eventImageAlt, "entry-event-photo")
+      : "";
     const locationBlock = !past ? buildFutureLocationBlock(entry) : "";
+    const onlineEventLine = isOnlineEvent(entry)
+      ? buildOnlineEventLine(entry, past, registrationUrl)
+      : "";
 
     openDialog(`
       <div class="dialog-body">
@@ -772,19 +972,20 @@ function openEntry(id, mode = "post") {
         ${eventMeta ? `<div class="dialog-meta"><span>${escapeHtml(eventMeta)}</span></div>` : ""}
         ${media}
         ${eventBody ? `<div class="dialog-copy">${eventBody}</div>` : ""}
+        ${onlineEventLine}
         ${locationBlock}
-        ${!past && registrationUrl ? `<a class="dialog-source" href="${escapeHtml(registrationUrl)}" target="_blank" rel="noopener noreferrer">Event details / registration &nearr;</a>` : ""}
+        ${!past && registrationUrl && !isOnlineEvent(entry) ? `<a class="dialog-source" href="${escapeHtml(registrationUrl)}" target="_blank" rel="noopener noreferrer">Event details / registration &nearr;</a>` : ""}
         ${past && sourceUrl ? `<a class="dialog-source" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">Related ${escapeHtml(cleanText(entry.source) || "source")} &nearr;</a>` : ""}
       </div>`);
   } else {
     const postDate = entryPublicationDate(entry);
-    const bodyRaw = cleanText(entry.post_body) || cleanText(entry.post_summary);
+    const bodyRaw = entryStoryBody(entry);
     const body = bodyRaw
       ? (/<[a-z][\s\S]*>/i.test(bodyRaw) ? sanitizeRichText(bodyRaw) : `<p>${escapeHtml(bodyRaw)}</p>`)
       : "";
-    const postVisual = cleanText(entry.post_image) || (past ? cleanText(entry.event_image) : "");
-    const postVisualAlt = cleanText(entry.post_image_alt) || cleanText(entry.event_image_alt) || entryPostTitle(entry);
-    const eventInfo = buildEntryEventInfo(entry, past);
+    const postVisual = entryStoryImage(entry, past);
+    const postVisualAlt = entryStoryImageAlt(entry, postVisual);
+    const eventInfo = buildEntryEventInfo(entry, past, registrationUrl);
     const locationBlock = hasEvent && !past ? buildFutureLocationBlock(entry) : "";
 
     openDialog(`
@@ -796,7 +997,7 @@ function openEntry(id, mode = "post") {
         ${eventInfo}
         ${body ? `<div class="dialog-copy">${body}</div>` : ""}
         ${locationBlock}
-        ${hasEvent && !past && registrationUrl ? `<a class="dialog-source" href="${escapeHtml(registrationUrl)}" target="_blank" rel="noopener noreferrer">Event details / registration &nearr;</a>` : ""}
+        ${hasEvent && !past && registrationUrl && !isOnlineEvent(entry) ? `<a class="dialog-source" href="${escapeHtml(registrationUrl)}" target="_blank" rel="noopener noreferrer">Event details / registration &nearr;</a>` : ""}
         ${sourceUrl ? `<a class="dialog-source" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">View original ${escapeHtml(cleanText(entry.source) || "source")} &nearr;</a>` : ""}
       </div>`);
   }

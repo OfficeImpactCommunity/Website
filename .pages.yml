@@ -1,6 +1,18 @@
-# Pages CMS configuration for Office Impact.
-# One unified content type is used for stories, events, webinars and recaps.
-# Keep this file at the repository root as .pages.yml
+# Office Impact - Pages CMS configuration
+#
+# Website content is edited on the Develop branch.
+#
+# Content types:
+#   event       = appears only in Events / Calendar
+#   story       = appears only in Stories
+#   event_story = appears in both
+#
+# Keep this file in the repository root as .pages.yml
+
+
+# ============================================================
+# MEDIA
+# ============================================================
 
 media:
   input: media
@@ -9,197 +21,436 @@ media:
   categories: [image]
   extensions: [jpg, jpeg, png, webp]
 
+
+# ============================================================
+# GLOBAL SETTINGS
+# ============================================================
+
 settings:
+  hide: true
   content:
     merge: true
 
+
+# ============================================================
+# CONTENT
+# ============================================================
+
 content:
+
+  # ==========================================================
+  # EVENTS & STORIES
+  # ==========================================================
+
   - name: entries
-    label: Entries
+    label: Events & Stories
     type: file
     path: content/entries.json
     format: json
-    list: true
+
     fields:
-      - name: id
-        label: Entry ID
-        type: string
-        required: true
-        pattern: "^[a-z0-9-]+$"
-        description: Stable technical ID, for example workplace-stress-webinar-2026.
 
-      - name: title
-        label: Default title
-        type: string
-        required: true
-        description: Fallback title used when a calendar or post title is blank.
+      - name: entries
+        label: Content
+        type: block
+        list: true
+        blockKey: kind
 
-      - name: show_in_calendar
-        label: Show in calendar
-        type: boolean
-        description: Turn on for events, webinars, meetups and other dated activities.
+        blocks:
 
-      - name: show_in_posts
-        label: Show in stories / highlights
-        type: boolean
-        description: Turn on when the entry should appear in the Stories section.
+          # ==================================================
+          # EVENT ONLY
+          # ==================================================
 
-      - name: featured_post
-        label: Featured post
-        type: boolean
-        description: Only applies when Show in stories / highlights is enabled. The newest featured entry gets the large homepage card.
+          - name: event
+            fields:
 
-      - name: published
-        label: Published
-        type: boolean
-        description: Hidden entries remain in the public repository; do not use for confidential drafts.
+              - name: id
+                label: Internal ID
+                type: string
+                required: true
+                pattern: "^[a-z0-9-]+$"
+                description: Use lowercase words separated by hyphens, for example community-breakfast-2027.
 
-      - name: calendar_title
-        label: Calendar title
-        type: string
-        description: Optional shorter title for the calendar. If blank, Default title is used.
+              - name: published
+                label: Published
+                type: boolean
+                default: true
+                description: Turn off to hide this item from the website.
 
-      - name: post_title
-        label: Post title
-        type: string
-        description: Optional editorial title for Stories. If blank, Default title is used.
+              - name: title
+                label: Event title
+                type: string
+                required: true
 
-      - name: publication_date
-        label: Publication date
-        type: date
-        description: Date shown on the post. Recommended when Show in stories / highlights is enabled.
+              - name: event_date
+                label: Event date
+                type: date
+                required: true
 
-      - name: category
-        label: Post category
-        type: select
-        options:
-          values: [Community, Learning, Perspective, News, Webinar, Event recap]
+              - name: event_time
+                label: Event time
+                type: string
+                description: For example 09:00 - 12:00 or 11:00 CET.
 
-      - name: post_summary
-        label: Post short summary
-        type: text
-        description: Short text shown on the homepage story card.
+              - name: event_type
+                label: Event type
+                type: select
+                options:
+                  values:
+                    - Summit
+                    - Webinar
+                    - Community meetup
+                    - Roundtable
+                    - Workshop
+                    - Online event
+                    - Other
 
-      - name: post_body
-        label: Post full content
-        type: rich-text
-        options:
-          format: html
-          media: false
-          switcher: false
+              - name: event_summary
+                label: Short description
+                type: text
+                description: Short introduction to the event.
 
-      - name: post_image
-        label: Post image
-        type: image
-        description: Story image. Featured posts use it prominently; other posts use a small thumbnail and the full image in detail view.
-        options:
-          path: stories
-          categories: [image]
-          extensions: [jpg, jpeg, png, webp]
-          rename: safe
+              - name: event_details
+                label: Event details
+                type: rich-text
+                options:
+                  format: html
+                  media: false
+                  switcher: false
 
-      - name: post_image_alt
-        label: Post image description
-        type: string
-        description: Short accessibility description. If blank, the post title is used.
+              - name: event_location
+                label: Venue / city
+                type: string
+                description: For example DB55, Amsterdam or Online.
 
-      - name: source
-        label: Source label
-        type: string
-        description: For example LinkedIn.
+              - name: address
+                label: Physical address
+                type: string
+                description: Used for the map on upcoming physical events.
 
-      - name: source_url
-        label: Source / LinkedIn URL
-        type: string
-        description: Optional https:// link to the original story or source.
+              - name: map_query
+                label: Map location override
+                type: string
+                description: Optional. Use only if Google Maps does not resolve the address correctly.
 
-      - name: event_date
-        label: Event date
-        type: date
-        description: Required in practice when Show in calendar is enabled.
+              - name: venue_image
+                label: Venue image
+                type: image
+                description: Optional image of the venue for an upcoming event.
+                options:
+                  path: events
+                  categories: [image]
+                  extensions: [jpg, jpeg, png, webp]
+                  rename: safe
 
-      - name: event_time
-        label: Event time
-        type: string
-        description: For example 09:00-17:00 or 11:00 CET.
+              - name: event_image
+                label: Event photo
+                type: image
+                description: Optional. Add a photo after the event has taken place.
+                options:
+                  path: events
+                  categories: [image]
+                  extensions: [jpg, jpeg, png, webp]
+                  rename: safe
 
-      - name: event_type
-        label: Event type
-        type: select
-        options:
-          values: [Summit, Webinar, Community meetup, Roundtable, Workshop, Online event, Other]
+              - name: event_image_alt
+                label: Event photo description
+                type: string
+                description: Accessibility description for the event photo.
 
-      - name: event_summary
-        label: Event short summary
-        type: text
-        description: Short event-specific description.
+              - name: registration_url
+                label: Registration / event URL
+                type: string
+                description: Use a full https:// link.
 
-      - name: event_details
-        label: Event details
-        type: rich-text
-        description: Event-specific content. For a past event, the post content is preferred when available.
-        options:
-          format: html
-          media: false
-          switcher: false
 
-      - name: event_location
-        label: Venue / city
-        type: string
-        description: For example DB55, Amsterdam or Online.
+          # ==================================================
+          # STORY ONLY
+          # ==================================================
 
-      - name: address
-        label: Physical address
-        type: string
-        description: Exact street address. Used for future-event map display.
+          - name: story
+            fields:
 
-      - name: map_query
-        label: Map location override
-        type: string
-        description: Optional. Use only if Google Maps does not resolve the physical address correctly. Enter a place name, address or coordinates.
+              - name: id
+                label: Internal ID
+                type: string
+                required: true
+                pattern: "^[a-z0-9-]+$"
+                description: Use lowercase words separated by hyphens.
 
-      - name: venue_image
-        label: Future event venue image
-        type: image
-        description: Optional photo of the venue/building. Shown only for current or future events.
-        options:
-          path: events
-          categories: [image]
-          extensions: [jpg, jpeg, png, webp]
-          rename: safe
+              - name: published
+                label: Published
+                type: boolean
+                default: true
+                description: Turn off to hide this story from the website.
 
-      - name: event_image
-        label: Past event photo
-        type: image
-        description: Optional photo from the actual event. Used for past-event detail instead of the map and venue image.
-        options:
-          path: events
-          categories: [image]
-          extensions: [jpg, jpeg, png, webp]
-          rename: safe
+              - name: title
+                label: Story title
+                type: string
+                required: true
 
-      - name: event_image_alt
-        label: Event photo description
-        type: string
-        description: Short accessibility description of the past-event photo.
+              - name: publication_date
+                label: Publication date
+                type: date
+                required: true
 
-      - name: registration_url
-        label: Event details / registration URL
-        type: string
-        description: Optional https:// link. Shown for current and future events.
+              - name: category
+                label: Category
+                type: select
+                options:
+                  values:
+                    - Community
+                    - Learning
+                    - Perspective
+                    - News
+                    - Webinar
+                    - Event recap
 
-    operations:
-      create: true
-      rename: false
-      delete: true
+              - name: post_summary
+                label: Short introduction
+                type: text
+                description: Short text shown on the story card.
+
+              - name: post_body
+                label: Story
+                type: rich-text
+                options:
+                  format: html
+                  media: false
+                  switcher: false
+
+              - name: post_image
+                label: Story image
+                type: image
+                description: If blank, the venue image (upcoming event) or event photo (past event) is reused.
+                options:
+                  path: stories
+                  categories: [image]
+                  extensions: [jpg, jpeg, png, webp]
+                  rename: safe
+
+              - name: post_image_alt
+                label: Image description
+                type: string
+                description: Short accessibility description.
+
+              - name: featured_post
+                label: Featured story
+                type: boolean
+                default: false
+                description: The newest featured story gets the large homepage card.
+
+              - name: source
+                label: Source
+                type: string
+                description: For example LinkedIn.
+
+              - name: source_url
+                label: Source / LinkedIn URL
+                type: string
+                description: Optional full https:// link.
+
+
+          # ==================================================
+          # EVENT + STORY
+          # ==================================================
+
+          - name: event_story
+            fields:
+
+              # ------------------------------------------------
+              # GENERAL
+              # ------------------------------------------------
+
+              - name: id
+                label: Internal ID
+                type: string
+                required: true
+                pattern: "^[a-z0-9-]+$"
+                description: Use lowercase words separated by hyphens.
+
+              - name: published
+                label: Published
+                type: boolean
+                default: true
+                description: Turn off to hide this item from the website.
+
+              - name: title
+                label: Event title
+                type: string
+                required: true
+
+
+              # ------------------------------------------------
+              # EVENT
+              # ------------------------------------------------
+
+              - name: event_date
+                label: Event date
+                type: date
+                required: true
+
+              - name: event_time
+                label: Event time
+                type: string
+                description: For example 09:00 - 17:00 or 11:00 CET.
+
+              - name: event_type
+                label: Event type
+                type: select
+                options:
+                  values:
+                    - Summit
+                    - Webinar
+                    - Community meetup
+                    - Roundtable
+                    - Workshop
+                    - Online event
+                    - Other
+
+              - name: event_summary
+                label: Event short description (optional)
+                type: text
+                description: Optional override. If blank, the story short introduction is reused.
+
+              - name: event_details
+                label: Event details (optional)
+                type: rich-text
+                description: Optional override. If blank, the story / recap is reused.
+                options:
+                  format: html
+                  media: false
+                  switcher: false
+
+              - name: event_location
+                label: Venue / city
+                type: string
+                description: For example DB55, Amsterdam or Online.
+
+              - name: address
+                label: Physical address
+                type: string
+
+              - name: map_query
+                label: Map location override
+                type: string
+                description: Optional. Use only if Google Maps does not resolve the physical address correctly.
+
+              - name: venue_image
+                label: Venue image
+                type: image
+                description: Preferred image for an upcoming event. If blank, the story image or event photo is reused.
+                options:
+                  path: events
+                  categories: [image]
+                  extensions: [jpg, jpeg, png, webp]
+                  rename: safe
+
+              - name: event_image
+                label: Event photo
+                type: image
+                description: Preferred photo from the actual event. If blank, the story image or venue image is reused.
+                options:
+                  path: events
+                  categories: [image]
+                  extensions: [jpg, jpeg, png, webp]
+                  rename: safe
+
+              - name: event_image_alt
+                label: Event photo description
+                type: string
+
+              - name: registration_url
+                label: Registration / event URL
+                type: string
+                description: Optional full https:// link.
+
+
+              # ------------------------------------------------
+              # STORY / RECAP
+              # ------------------------------------------------
+
+              - name: post_title
+                label: Different story headline
+                type: string
+                description: Optional. Leave blank to use the event title.
+
+              - name: publication_date
+                label: Story publication date
+                type: date
+                description: Date shown in Stories.
+
+              - name: category
+                label: Story category
+                type: select
+                options:
+                  values:
+                    - Community
+                    - Learning
+                    - Perspective
+                    - News
+                    - Webinar
+                    - Event recap
+
+              - name: post_summary
+                label: Story short introduction
+                type: text
+                description: Short text shown on the story card. If blank, the event short description is reused.
+
+              - name: post_body
+                label: Story / recap
+                type: rich-text
+                description: If blank, the event details are reused.
+                options:
+                  format: html
+                  media: false
+                  switcher: false
+
+              - name: post_image
+                label: Story image
+                type: image
+                description: If blank, the venue image (upcoming event) or event photo (past event) is reused.
+                options:
+                  path: stories
+                  categories: [image]
+                  extensions: [jpg, jpeg, png, webp]
+                  rename: safe
+
+              - name: post_image_alt
+                label: Story image description
+                type: string
+
+              - name: featured_post
+                label: Featured story
+                type: boolean
+                default: false
+                description: The newest featured story gets the large homepage card.
+
+              - name: source
+                label: Source
+                type: string
+                description: For example LinkedIn.
+
+              - name: source_url
+                label: Source / LinkedIn URL
+                type: string
+                description: Optional full https:// link.
+
+
+  # ==========================================================
+  # PEOPLE
+  # ==========================================================
 
   - name: people
-    label: People
+    label: Team
     type: file
     path: content/people.json
     format: json
     list: true
+
     fields:
+
       - name: name
         label: Name
         type: string
@@ -226,17 +477,16 @@ content:
       - name: bio_long
         label: Full bio - profile detail
         type: text
-        description: Optional longer biography shown when the profile is opened. If blank, the short bio is used.
+        description: Optional longer biography. If blank, the short bio is used.
 
       - name: linkedin_url
         label: LinkedIn URL
         type: string
-        description: Use an https:// URL.
+        description: Use a full https:// URL.
 
       - name: image
         label: Profile image
         type: image
-        description: Upload or select an image, then save the person record.
         options:
           path: people
           categories: [image]
@@ -255,3 +505,21 @@ content:
       create: true
       rename: false
       delete: true
+
+
+# ============================================================
+# ACTIONS
+# ============================================================
+
+actions:
+
+  - name: publish-production
+    label: Publish to production
+    workflow: publish-production.yml
+    ref: Develop
+    cancelable: false
+
+    confirm:
+      title: Publish website?
+      message: This will publish the current Develop content to officeimpact.co.
+      button: Publish

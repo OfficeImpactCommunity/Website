@@ -6,14 +6,14 @@
   <meta name="description" content="Office Impact Community - a peer community for the people who shape workplace experience.">
   <meta name="theme-color" content="#242321">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; font-src 'self'; object-src 'none'; base-uri 'none'; frame-src https://www.google.com https://maps.google.com; form-action 'none'; media-src 'none'; worker-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://ozvtyutfjswajksjzcec.supabase.co; connect-src 'self' https://cloudflareinsights.com https://ozvtyutfjswajksjzcec.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; frame-src https://www.google.com https://maps.google.com; form-action 'none'; media-src 'none'; worker-src 'none'">
   <title>Office Impact Community - Workplace community</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <div class="nav-transition" id="navTransition" aria-hidden="true">
     <div class="nav-transition__mark">
-      <img src="./media/office-impact-logo.jpg" alt="">
+      <img src="./media/office-impact-logo.png" alt="">
       <span></span>
     </div>
   </div>
@@ -21,12 +21,12 @@
   <header class="site-header" id="top">
     <div class="shell site-header__inner">
       <a class="brand brand--logo" href="#top" aria-label="Office Impact Community home">
-        <img class="brand-logo" src="./media/office-impact-logo.jpg" alt="Office Impact Community">
+        <img class="brand-logo" src="./media/office-impact-logo.png" alt="Office Impact Community">
       </a>
       <nav class="main-nav" aria-label="Main navigation">
         <a href="#events">Events</a>
         <a href="#stories">Stories</a>
-        <a href="#people">People</a>
+        <a href="#people">Team</a>
         <a href="#top">About</a>
       </nav>
       <a class="button button--dark header-cta" href="https://www.linkedin.com/groups/42222009/" target="_blank" rel="noopener noreferrer">Join on LinkedIn &nearr;</a>
@@ -115,7 +115,7 @@
       <div class="shell">
         <div class="section-heading">
           <div>
-            <span class="section-kicker">People</span>
+            <span class="section-kicker">Team</span>
             <h2>Meet the voices in the room.</h2>
           </div>
           <div class="section-heading__aside">People helping shape workplace experience across the community.</div>
@@ -141,13 +141,14 @@
   <footer class="footer">
     <div class="shell footer-grid">
       <a class="brand brand--footer brand--logo" href="#top" aria-label="Office Impact Community home">
-        <img class="brand-logo brand-logo--footer" src="./media/office-impact-logo.jpg" alt="Office Impact Community">
+        <img class="brand-logo brand-logo--footer" src="./media/office-impact-logo.png" alt="Office Impact Community">
       </a>
       <p>A peer community for office, workplace, facilities and community professionals.</p>
-      <div class="footer-links">
-        <a href="https://www.linkedin.com/groups/42222009/" target="_blank" rel="noopener noreferrer">LinkedIn group &nearr;</a>
-        <a href="#top">Back to top &uarr;</a>
-      </div>
+     <div class="footer-links">
+  <a href="https://www.linkedin.com/groups/42222009/" target="_blank" rel="noopener noreferrer">LinkedIn group &nearr;</a>
+  <a href="#top">Back to top &uarr;</a>
+</div>
+
     </div>
   </footer>
 
@@ -156,7 +157,7 @@
     <div id="dialogContent"></div>
   </dialog>
 
-  <script src="./app.js" defer></script>
+  <script type="module" src="./app.js?v=20261119-live-stage"></script>
   <!-- Cloudflare Web Analytics -->
   <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"b1084d1e83cb46878382c1d0899560a3"}'></script>
   <!-- End Cloudflare Web Analytics -->
