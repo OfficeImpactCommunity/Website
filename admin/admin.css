@@ -438,3 +438,14 @@
  .admin-preview-dialog .person-dialog__header{grid-template-columns:110px minmax(0,1fr);gap:16px}
  .admin-preview-dialog .person-dialog__avatar{border-radius:16px;font-size:38px}
 }
+
+/* Keep review actions visible and easy to tap */
+.admin-preview-detail-button{
+  flex-shrink:0;
+  white-space:nowrap;
+  border-color:rgba(36,35,33,.16);
+}
+.admin-preview-card__bar .admin-preview-detail-button:focus-visible{
+  outline:2px solid var(--accent-deep);
+  outline-offset:2px;
+}
