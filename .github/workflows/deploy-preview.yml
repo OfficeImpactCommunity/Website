@@ -27,5 +27,5 @@ jobs:
           external_repository: OfficeImpactCommunity/Website-preview
           publish_branch: gh-pages
           publish_dir: .
-          exclude_assets: '.github,CNAME,.pages.yml,README.md,SECURITY.md'
+          exclude_assets: '.github,CNAME,.pages.yml,README.md,SECURITY.md,AUDIT.md'
           force_orphan: true
