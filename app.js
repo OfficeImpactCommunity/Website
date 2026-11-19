@@ -1,3 +1,5 @@
+import { supabase, SUPABASE_URL } from "./supabase-client.js";
+
 const state = {
   entries: [],
   people: [],
@@ -145,7 +147,19 @@ function assetUrl(value) {
     : String(value?.src || value?.url || value?.path || "").trim();
 
   if (!raw) return "";
-  if (/^(https?:|data:|blob:)/i.test(raw)) return "";
+  if (/^https?:/i.test(raw)) {
+    try {
+      const url = new URL(raw);
+      if (
+        url.origin === SUPABASE_URL &&
+        url.pathname.startsWith("/storage/v1/object/public/office-impact-media/")
+      ) return url.href;
+    } catch {
+      return "";
+    }
+    return "";
+  }
+  if (/^(data:|blob:)/i.test(raw)) return "";
   if (raw.includes("..")) return "";
 
   let normalized = raw.replace(/^\.\//, "").replace(/^\//, "");
@@ -354,24 +368,72 @@ async function loadJson(path) {
   return response.json();
 }
 
+async function loadSupabaseContent() {
+  const [entriesResult, peopleResult] = await Promise.all([
+    supabase.from("content_items").select("content_key, kind, data").eq("stage", "live"),
+    supabase.from("people").select("person_key, data").eq("stage", "live"),
+  ]);
+
+  if (entriesResult.error) throw entriesResult.error;
+  if (peopleResult.error) throw peopleResult.error;
+
+  state.entries = (entriesResult.data || [])
+    .map((row) => ({ ...(row.data || {}), id: row.content_key, kind: row.kind }))
+    .filter(entryIsPublished);
+
+  state.people = (peopleResult.data || [])
+    .map((row) => ({ ...(row.data || {}), id: row.person_key }))
+    .filter((item) => !isFalse(item.published));
+}
+
+async function loadLegacyContent() {
+  const [entriesData, people] = await Promise.all([
+    loadJson("./content/entries.json"),
+    loadJson("./content/people.json"),
+  ]);
+
+  const entries = Array.isArray(entriesData)
+    ? entriesData
+    : Array.isArray(entriesData?.entries)
+      ? entriesData.entries
+      : [];
+
+  state.entries = entries.filter(entryIsPublished);
+  state.people = Array.isArray(people)
+    ? people.filter((item) => !isFalse(item.published))
+    : [];
+}
+
+async function setupAdminNavigation() {
+  const link = $("#adminNavLink");
+  if (!link) return;
+  link.hidden = true;
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    const { data, error } = await supabase
+      .from("editors")
+      .select("active")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+
+    if (!error && data?.active) link.hidden = false;
+  } catch (error) {
+    console.warn("Admin navigation check failed:", error);
+  }
+}
+
 async function init() {
   try {
-    const [entriesData, people] = await Promise.all([
-      loadJson("./content/entries.json"),
-      loadJson("./content/people.json"),
-    ]);
-
-    const entries = Array.isArray(entriesData)
-      ? entriesData
-      : Array.isArray(entriesData?.entries)
-        ? entriesData.entries
-        : [];
-
-    state.entries = entries.filter(entryIsPublished);
-
-    state.people = Array.isArray(people)
-      ? people.filter((item) => !isFalse(item.published))
-      : [];
+    try {
+      await loadSupabaseContent();
+    } catch (supabaseError) {
+      // Keep the existing static JSON files as a temporary migration fallback.
+      console.error("Supabase content could not be loaded; using the static fallback.", supabaseError);
+      await loadLegacyContent();
+    }
 
     state.calendarDate = startOfMonth(startOfToday());
 
@@ -380,6 +442,7 @@ async function init() {
     renderStories();
     renderPeople();
     setupMotion();
+    setupAdminNavigation();
   } catch (error) {
     console.error(error);
     showLoadErrors();
