@@ -11,7 +11,7 @@
   <title>Administration | Office Impact Community</title>
   <link rel="stylesheet" href="../styles.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
-  <link rel="stylesheet" href="./admin.css?v=20261120-image-editor-2">
+  <link rel="stylesheet" href="./admin.css?v=20261120-image-editor-icons-1">
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -173,7 +173,7 @@
       </a>
       <p>Office Impact Community website administration.</p>
       <div class="footer-links"><a href="../">Public website &nearr;</a></div>
-      <small class="admin-build-info">Admin UI v2026.11.20.6 · Updated 20 Nov 2026, 16:02 CET</small>
+      <small class="admin-build-info">Admin UI v2026.11.20.7 · Updated 20 Nov 2026, 16:10 CET</small>
     </div>
   </footer>
   <dialog class="admin-image-editor" id="imageCropDialog" aria-labelledby="imageCropTitle">
@@ -183,19 +183,19 @@
     </div>
     <div class="admin-image-editor__workspace"><img id="imageCropSource" alt="Image to edit"></div>
     <div class="admin-image-editor__tools" aria-label="Image editing tools">
-      <button class="admin-small-button" type="button" data-crop-action="rotate-left">Rotate left</button>
-      <button class="admin-small-button" type="button" data-crop-action="rotate-right">Rotate right</button>
-      <button class="admin-small-button" type="button" data-crop-action="flip-horizontal">Mirror horizontal</button>
-      <button class="admin-small-button" type="button" data-crop-action="flip-vertical">Mirror vertical</button>
-      <button class="admin-small-button" type="button" data-crop-action="reset">Reset</button>
+      <button class="admin-small-button admin-image-editor__icon-button" type="button" data-crop-action="rotate-left" aria-label="Rotate left" title="Rotate left"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 10V4m0 0h6M4 4l4 4a8 8 0 1 1-2 8"/></svg></button>
+      <button class="admin-small-button admin-image-editor__icon-button" type="button" data-crop-action="rotate-right" aria-label="Rotate right" title="Rotate right"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 10V4m0 0h-6m6 0-4 4a8 8 0 1 0 2 8"/></svg></button>
+      <button class="admin-small-button admin-image-editor__icon-button" type="button" data-crop-action="flip-horizontal" aria-label="Mirror horizontally" title="Mirror horizontally"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v18M3 7h6l-3 5 3 5H3zM21 7h-6l3 5-3 5h6z"/></svg></button>
+      <button class="admin-small-button admin-image-editor__icon-button" type="button" data-crop-action="flip-vertical" aria-label="Mirror vertically" title="Mirror vertically"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12h18M7 3v6l5-3 5 3V3zM7 21v-6l5 3 5-3v6z"/></svg></button>
+      <button class="admin-small-button admin-image-editor__icon-button" type="button" data-crop-action="reset" aria-label="Reset edits" title="Reset edits"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/></svg></button>
     </div>
     <p class="admin-image-editor__hint">Drag the image to reposition it and drag the crop handles to select the area to keep.</p>
     <div class="admin-image-editor__actions">
-      <button class="admin-small-button" id="imageCropCancel" type="button">Cancel</button>
-      <button class="button button--dark" id="imageCropApply" type="button">Apply &amp; upload</button>
+      <button class="admin-small-button admin-image-editor__icon-button" id="imageCropCancel" type="button" aria-label="Cancel" title="Cancel"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      <button class="button button--dark admin-image-editor__icon-button" id="imageCropApply" type="button" aria-label="Apply and upload" title="Apply and upload"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12l4 4L19 6"/></svg></button>
     </div>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js" defer></script>
-  <script type="module" src="./admin.js?v=20261120-image-editor-3"></script>
+  <script type="module" src="./admin.js?v=20261120-image-editor-icons-1"></script>
 </body>
 </html>
