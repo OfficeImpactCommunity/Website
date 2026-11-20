@@ -1,4 +1,5 @@
 import { supabase, SUPABASE_URL } from "./supabase-client.js";
+import { cleanText, escapeHtml, firstContent, formatDate, initials, isTrue, parseDate, safeExternalUrl, sanitizeRichText } from "./shared.js";
 
 const state = {
   entries: [],
@@ -14,9 +15,6 @@ const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)
 const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
 let revealObserver = null;
 
-function parseDate(value) {
-  return new Date(`${value}T12:00:00`);
-}
 
 function startOfToday() {
   const today = new Date();
@@ -42,43 +40,9 @@ function addMonths(date, amount) {
   return result;
 }
 
-function formatDate(value, options = {}) {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: options.day || "numeric",
-    month: options.month || "long",
-    year: options.year || "numeric",
-  }).format(parseDate(value));
-}
 
-function escapeHtml(value = "") {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
 
-function initials(name = "") {
-  return String(name)
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase())
-    .join("");
-}
 
-function safeExternalUrl(value = "") {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-
-  try {
-    const url = new URL(raw);
-    return url.protocol === "https:" ? url.href : "";
-  } catch {
-    return "";
-  }
-}
 
 function googleMapsUrls(queryValue = "") {
   const query = String(queryValue || "").trim();
@@ -91,55 +55,7 @@ function googleMapsUrls(queryValue = "") {
   };
 }
 
-function safeRichLinkUrl(value = "") {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  if (raw.startsWith("#")) return raw;
 
-  try {
-    const url = new URL(raw, window.location.href);
-    if (url.origin === window.location.origin) return url.href;
-    return url.protocol === "https:" ? url.href : "";
-  } catch {
-    return "";
-  }
-}
-
-function sanitizeRichText(value = "") {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(`<body>${String(value || "")}</body>`, "text/html");
-  const root = doc.body;
-  const allowedTags = new Set(["P", "BR", "STRONG", "B", "EM", "I", "UL", "OL", "LI", "H3", "H4", "BLOCKQUOTE", "A"]);
-  const dropWithContent = new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "SVG", "MATH", "FORM", "INPUT", "TEXTAREA", "BUTTON"]);
-
-  $$('*', root).forEach((element) => {
-    const tag = element.tagName;
-
-    if (dropWithContent.has(tag)) {
-      element.remove();
-      return;
-    }
-
-    if (!allowedTags.has(tag)) {
-      element.replaceWith(...element.childNodes);
-      return;
-    }
-
-    const originalHref = tag === "A" ? element.getAttribute("href") || "" : "";
-    Array.from(element.attributes).forEach((attribute) => element.removeAttribute(attribute.name));
-
-    if (tag === "A") {
-      const href = safeRichLinkUrl(originalHref);
-      if (href) {
-        element.setAttribute("href", href);
-        element.setAttribute("target", "_blank");
-        element.setAttribute("rel", "noopener noreferrer");
-      }
-    }
-  });
-
-  return root.innerHTML;
-}
 
 function assetUrl(value) {
   const raw = typeof value === "string"
@@ -179,17 +95,8 @@ function assetUrl(value) {
   }
 }
 
-function isTrue(value) {
-  return value === true || value === 1 || value === "true" || value === "1";
-}
 
-function isFalse(value) {
-  return value === false || value === 0 || value === "false" || value === "0";
-}
 
-function cleanText(value) {
-  return String(value || "").trim();
-}
 
 function isDateString(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(cleanText(value));
@@ -199,22 +106,6 @@ function entryPostTitle(entry) {
   return cleanText(entry.post_title) || cleanText(entry.title) || "Untitled";
 }
 
-function firstContent(...values) {
-  return values.map((value) => {
-    const raw = cleanText(value);
-    if (!raw) return "";
-
-    // Rich-text editors may save an empty field as <p></p> or <p><br></p>.
-    // Treat those placeholders as blank so the fallback can take effect.
-    const visibleText = raw
-      .replace(/&nbsp;|&#160;|&#xA0;/gi, " ")
-      .replace(/<br\s*\/?>/gi, "")
-      .replace(/<[^>]*>/g, "")
-      .trim();
-
-    return visibleText ? raw : "";
-  }).find(Boolean) || "";
-}
 
 // Shared event/story records can keep one description and one image.
 // Prefer the field that best fits the current context, then fall back.
@@ -307,12 +198,6 @@ function entryKind(entry) {
     return kind;
   }
 
-  // Backwards compatibility with the old content model.
-  const inCalendar = isTrue(entry.show_in_calendar);
-  const inPosts = isTrue(entry.show_in_posts);
-
-  if (inCalendar && inPosts) return "event_story";
-  if (inCalendar) return "event";
   return "story";
 }
 
@@ -331,9 +216,6 @@ function entryShowsInCalendar(entry) {
 }
 
 
-function entryIsPublished(entry) {
-  return !isFalse(entry.published);
-}
 
 function entryIsPastEvent(entry) {
   return entryShowsInCalendar(entry) && parseDate(entry.event_date) < startOfToday();
@@ -359,14 +241,6 @@ function openCalendarItem(key) {
   openEntry(cleanText(key), "event");
 }
 
-async function loadJson(path) {
-  const response = await fetch(path, {
-    cache: "no-store",
-    credentials: "same-origin",
-  });
-  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-  return response.json();
-}
 
 async function loadSupabaseContent() {
   const [entriesResult, peopleResult] = await Promise.all([
@@ -377,9 +251,6 @@ async function loadSupabaseContent() {
   if (entriesResult.error) throw entriesResult.error;
   if (peopleResult.error) throw peopleResult.error;
 
-  // The database stage is the publication source of truth. A legacy
-  // published flag inside the JSON payload must not hide a row already
-  // published as live in Supabase.
   state.entries = (entriesResult.data || [])
     .map((row) => ({
       ...(row.data || {}),
@@ -396,23 +267,6 @@ async function loadSupabaseContent() {
     }));
 }
 
-async function loadLegacyContent() {
-  const [entriesData, people] = await Promise.all([
-    loadJson("./content/entries.json"),
-    loadJson("./content/people.json"),
-  ]);
-
-  const entries = Array.isArray(entriesData)
-    ? entriesData
-    : Array.isArray(entriesData?.entries)
-      ? entriesData.entries
-      : [];
-
-  state.entries = entries.filter(entryIsPublished);
-  state.people = Array.isArray(people)
-    ? people.filter((item) => !isFalse(item.published))
-    : [];
-}
 
 function setupAdminNavigation() {
   // The link is deliberately visible to everyone; the admin page enforces access.
@@ -424,13 +278,7 @@ function setupAdminNavigation() {
 
 async function init() {
   try {
-    try {
-      await loadSupabaseContent();
-    } catch (supabaseError) {
-      // Keep the existing static JSON files as a temporary migration fallback.
-      console.error("Supabase content could not be loaded; using the static fallback.", supabaseError);
-      await loadLegacyContent();
-    }
+    await loadSupabaseContent();
 
     state.calendarDate = startOfMonth(startOfToday());
 

@@ -8,7 +8,6 @@ The Office Impact Community website is a static site hosted on GitHub Pages. Sup
 - **Content:** Supabase stores events, stories and team profiles. The public website reads published content.
 - **Admin:** Google sign-in is used for the administration area. Editors manage drafts; Admins can manage access and publish content.
 - **Images:** existing site images remain in the repository. New images uploaded from Admin are stored in Supabase Storage.
-- **Legacy files:** the original JSON files are retained as a temporary fallback during the migration.
 
 ## Branches and publishing
 

@@ -1,4 +1,5 @@
 import { supabase } from "../supabase-client.js";
+import { cleanText, escapeHtml, firstContent, formatDate, initials, isTrue, safeExternalUrl, sanitizeRichText } from "../shared.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -58,10 +59,6 @@ const PERSON_FIELDS = [
   { name: "featured", label: "Featured", type: "checkbox" },
 ];
 
-function escapeHtml(value = "") {
-  return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
-}
 
 function slug(value = "") {
   return String(value).normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
@@ -147,18 +144,7 @@ function groupedRows() {
   }));
 }
 
-function isTrue(value) {
-  return value === true || value === 1 || value === "true" || value === "1";
-}
 
-function initials(name = "") {
-  return String(name)
-    .split(/\\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() || "")
-    .join("");
-}
 
 function previewStatus(group) {
   if (group.live) {
@@ -386,72 +372,23 @@ function renderContentPreview() {
 }
 
 
-function adminDetailText(value) {
-  return String(value || "").trim();
-}
 
 function adminDetailDate(value) {
-  const date = previewDate(value);
-  return date ? new Intl.DateTimeFormat("en-GB", {
-    day: "numeric", month: "long", year: "numeric"
-  }).format(date) : "";
+  return previewDate(value) ? formatDate(value) : "";
 }
 
 function adminDetailUrl(value) {
-  const raw = adminDetailText(value);
-  if (!raw) return "";
-  try {
-    const url = new URL(raw);
-    return url.protocol === "https:" ? url.href : "";
-  } catch {
-    return "";
-  }
+  return safeExternalUrl(cleanText(value));
 }
 
-function adminDetailRichText(value) {
-  const raw = adminDetailText(value);
-  if (!raw) return "";
-  const parser = new DOMParser();
-  const doc = parser.parseFromString("<body>" + raw + "</body>", "text/html");
-  const allowed = new Set(["P","BR","STRONG","B","EM","I","UL","OL","LI","H3","H4","BLOCKQUOTE","A"]);
-  const drop = new Set(["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","SVG","MATH","FORM","INPUT","TEXTAREA","BUTTON"]);
-  $$("*", doc.body).forEach((el) => {
-    const tag = el.tagName;
-    if (drop.has(tag)) { el.remove(); return; }
-    if (!allowed.has(tag)) { el.replaceWith(...el.childNodes); return; }
-    const href = tag === "A" ? (el.getAttribute("href") || "") : "";
-    Array.from(el.attributes).forEach((attr) => el.removeAttribute(attr.name));
-    if (tag === "A" && href) {
-      try {
-        const url = new URL(href, window.location.href);
-        if (url.protocol === "https:" || url.origin === window.location.origin) {
-          el.setAttribute("href", url.href);
-          el.setAttribute("target", "_blank");
-          el.setAttribute("rel", "noopener noreferrer");
-        }
-      } catch { /* Invalid links remain plain text. */ }
-    }
-  });
-  return doc.body.innerHTML;
-}
 
 function adminDetailBody(value) {
-  const raw = adminDetailText(value);
+  const raw = cleanText(value);
   if (!raw) return "";
-  if (/<[a-z][\s\S]*>/i.test(raw)) return adminDetailRichText(raw);
+  if (/<[a-z][\s\S]*>/i.test(raw)) return sanitizeRichText(raw);
   return "<p>" + escapeHtml(raw) + "</p>";
 }
 
-function adminFirstDetailContent(values) {
-  for (const value of values) {
-    const raw = adminDetailText(value);
-    if (!raw) continue;
-    const visible = raw.replace(/&nbsp;|&#160;|&#xA0;/gi, " ")
-      .replace(/<br\s*\/?\s*>/gi, "").replace(/<[^>]*>/g, "").trim();
-    if (visible) return raw;
-  }
-  return "";
-}
 
 function adminDetailImage(value, alt, extraClass) {
   const src = imagePreview(value);
@@ -463,8 +400,8 @@ function adminDetailImage(value, alt, extraClass) {
 
 function adminDetailLocation(data, title, online, past) {
   if (online || past) return "";
-  const venue = adminDetailText(data.event_location);
-  const address = adminDetailText(data.address);
+  const venue = cleanText(data.event_location);
+  const address = cleanText(data.address);
   const venueImage = imagePreview(data.venue_image);
   const panels = [];
   if (venue || address) {
@@ -478,7 +415,7 @@ function adminDetailLocation(data, title, online, past) {
       '<img src="' + escapeHtml(venueImage) + '" alt="' + escapeHtml(venue || title) + ' venue" loading="lazy">' +
       '</figure>');
   }
-  const query = adminDetailText(data.map_query) || address;
+  const query = cleanText(data.map_query) || address;
   if (query) {
     const mapUrl = "https://www.google.com/maps?q=" + encodeURIComponent(query) + "&output=embed";
     panels.push('<div class="event-location__panel event-location__map">' +
@@ -531,29 +468,29 @@ function openPreviewEntryDetail(key, mode) {
   const source = adminDetailUrl(data.source_url);
   const eventMeta = [
     adminDetailDate(data.event_date),
-    adminDetailText(data.event_time),
-    online ? "" : adminDetailText(data.event_location)
+    cleanText(data.event_time),
+    online ? "" : cleanText(data.event_location)
   ].filter(Boolean).join(" · ");
 
   const isStory = mode === "story";
   const title = isStory
-    ? (adminDetailText(data.post_title) || adminDetailText(data.title) || "Untitled story")
-    : (adminDetailText(data.calendar_title) || adminDetailText(data.title) || "Untitled event");
+    ? (cleanText(data.post_title) || cleanText(data.title) || "Untitled story")
+    : (cleanText(data.calendar_title) || cleanText(data.title) || "Untitled event");
   const bodyValue = isStory
-    ? adminFirstDetailContent([data.post_body, data.event_details, data.post_summary, data.event_summary])
+    ? firstContent(data.post_body, data.event_details, data.post_summary, data.event_summary)
     : (past
-      ? adminFirstDetailContent([data.post_body, data.event_details, data.post_summary, data.event_summary])
-      : adminFirstDetailContent([data.event_details, data.event_summary, data.post_body, data.post_summary]));
+      ? firstContent(data.post_body, data.event_details, data.post_summary, data.event_summary)
+      : firstContent(data.event_details, data.event_summary, data.post_body, data.post_summary));
   const body = adminDetailBody(bodyValue);
   const imageValue = isStory
     ? (past
-      ? adminFirstDetailContent([data.post_image, data.event_image, data.venue_image])
-      : adminFirstDetailContent([data.post_image, data.venue_image, data.event_image]))
+      ? firstContent(data.post_image, data.event_image, data.venue_image)
+      : firstContent(data.post_image, data.venue_image, data.event_image))
     : (past
-      ? adminFirstDetailContent([data.event_image, data.post_image, data.venue_image])
+      ? firstContent(data.event_image, data.post_image, data.venue_image)
       : (online
-        ? adminFirstDetailContent([data.post_image, data.event_image])
-        : adminFirstDetailContent([data.venue_image, data.post_image, data.event_image])));
+        ? firstContent(data.post_image, data.event_image)
+        : firstContent(data.venue_image, data.post_image, data.event_image)));
   const alt = isStory
     ? (data.post_image_alt || data.event_image_alt || title)
     : (data.event_image_alt || data.post_image_alt || title);
@@ -615,8 +552,8 @@ function openPreviewPersonDetail(key) {
   const status = previewStatus(group);
   const image = imagePreview(person.image);
   const role = [person.role, person.organization].filter(Boolean).join(" · ");
-  const officeRole = adminDetailText(person.office_impact_role);
-  const bio = adminDetailText(person.bio_long) || adminDetailText(person.bio);
+  const officeRole = cleanText(person.office_impact_role);
+  const bio = cleanText(person.bio_long) || cleanText(person.bio);
   const linkedin = adminDetailUrl(person.linkedin_url);
   const content = '<div class="dialog-body person-dialog">' +
     '<div class="person-dialog__header">' +
