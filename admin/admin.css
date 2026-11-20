@@ -418,6 +418,17 @@
  .admin-preview-stories{grid-template-columns:1fr}
  .admin-preview-people-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+@media(max-width:760px){
+ /* Keep the publication note on its own row instead of squeezing it between the status and actions. */
+ .admin-preview-card__note{
+  flex:1 0 100%;
+  order:2;
+  width:100%;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+ }
+ .admin-preview-card__bar .admin-small-button{order:3}
+}
 @media(max-width:480px){
  .admin-preview-people-grid{grid-template-columns:1fr}
  .admin-preview-event .event-item{grid-template-columns:58px minmax(0,1fr)}
