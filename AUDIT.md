@@ -2,7 +2,7 @@
 
 **Audit date:** 19 November 2026  
 **Audited source:** `DevelopSupabase`  
-**Outcome branch:** `DevelopAudit`  
+**Outcome branch:** `Develop`  
 **Production branch:** `main` (not changed)  
 **Preview site:** GitHub Pages repository `Website-preview`  
 **Supabase project:** Office Impact Website (EU region)
@@ -173,3 +173,24 @@ The following were deliberately retained:
 ## Recommendation
 
 Do not rewrite the site or introduce a frontend framework solely for efficiency. Keep the static-site approach. The best next investment is separation of staging and production data, reproducible database migrations, and a small shared rendering/sanitisation layer. This delivers the largest improvements in safety and maintainability without adding unnecessary infrastructure.
+
+
+---
+
+## Addendum — 20 November 2026 cleanup on `Develop`
+
+This addendum supersedes the earlier repository-cleanup file list and any branch/workflow references above that conflict with the current state. The original 19 November security and architecture findings are retained as a dated historical assessment.
+
+- Created recovery branch `backup/develop-pre-cleanup-2026-11-20` before cleanup.
+- Removed Pages CMS configuration `.pages.yml`, its unused static JSON snapshots, and the public-site JSON fallback. Supabase is now the only content source; failures use the existing content-unavailable UI.
+- Removed legacy `show_in_calendar` / `show_in_posts` compatibility handling.
+- Added `shared.js` for common escaping, text cleanup, date formatting, initials, boolean parsing, URL validation, rich-text sanitisation and content fallback helpers. Public and admin code import these helpers.
+- Removed the old logo source, its image-adjustment workflow/script, unused snapshot-only images and obsolete QR variants.
+- Updated the preview deployment workflow and README to use the actual `Develop` branch.
+- Current repository media inventory: eight image assets remain. Five are referenced by current Supabase content and three support the active site layout (logo, hero, WhatsApp QR).
+- Supabase Storage has 15 objects; two unique object paths are referenced by current people records. The remaining 13 objects were deliberately retained pending historical-asset review.
+- No Supabase schema, RLS policy, authentication setting, storage object, or `main` production branch was changed.
+
+The cleanup commit is `f9ae146a8b6f0b9c91ddedbadefc2dfe8cd7fa6a`; the follow-up documentation correction is `6326fcecb215da54a4f7967a5c17215d5d70fa42`.
+
+The GitHub Actions preview deployment for the cleanup completed successfully on 20 November 2026. This confirms the deployment workflow completed, but it is not a substitute for manual browser testing of public and admin flows.

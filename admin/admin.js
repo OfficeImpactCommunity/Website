@@ -1,4 +1,5 @@
 import { supabase } from "../supabase-client.js";
+import { cleanText, escapeHtml, firstContent, formatDate, initials, isTrue, safeExternalUrl, sanitizeRichText } from "../shared.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -58,10 +59,6 @@ const PERSON_FIELDS = [
   { name: "featured", label: "Featured", type: "checkbox" },
 ];
 
-function escapeHtml(value = "") {
-  return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
-}
 
 function slug(value = "") {
   return String(value).normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
@@ -147,26 +144,28 @@ function groupedRows() {
   }));
 }
 
-function isTrue(value) {
-  return value === true || value === 1 || value === "true" || value === "1";
+function hasUnpublishedChanges(group) {
+  if (!group?.draft) return false;
+  if (!group.live) return true;
+  const stable = (value) => {
+    if (Array.isArray(value)) return value.map(stable);
+    if (value && typeof value === "object") {
+      return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stable(value[key])]));
+    }
+    return value;
+  };
+  return JSON.stringify(stable(group.draft.data || {})) !== JSON.stringify(stable(group.live.data || {}));
 }
 
-function initials(name = "") {
-  return String(name)
-    .split(/\\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() || "")
-    .join("");
-}
+
 
 function previewStatus(group) {
   if (group.live) {
     return {
       label: "Live on website",
       className: "live",
-      note: group.draft
-        ? "This item is published. The preview below shows saved draft edits; the public website continues to show the live version until you publish these changes."
+      note: hasUnpublishedChanges(group)
+        ? "The preview shows saved changes that are not published yet. The public website still shows the live version."
         : "This is the version currently shown on the public website.",
     };
   }
@@ -182,7 +181,7 @@ function previewStatusBadges(group) {
   const liveBadge = group.live
     ? '<span class="admin-preview-status admin-preview-status--live">Live on website</span>'
     : "";
-  const draftBadge = group.draft
+  const draftBadge = hasUnpublishedChanges(group)
     ? `<span class="admin-preview-status admin-preview-status--draft">${group.live ? "Draft edits saved" : "Draft preview"}</span>`
     : "";
   return liveBadge + draftBadge;
@@ -386,72 +385,23 @@ function renderContentPreview() {
 }
 
 
-function adminDetailText(value) {
-  return String(value || "").trim();
-}
 
 function adminDetailDate(value) {
-  const date = previewDate(value);
-  return date ? new Intl.DateTimeFormat("en-GB", {
-    day: "numeric", month: "long", year: "numeric"
-  }).format(date) : "";
+  return previewDate(value) ? formatDate(value) : "";
 }
 
 function adminDetailUrl(value) {
-  const raw = adminDetailText(value);
-  if (!raw) return "";
-  try {
-    const url = new URL(raw);
-    return url.protocol === "https:" ? url.href : "";
-  } catch {
-    return "";
-  }
+  return safeExternalUrl(cleanText(value));
 }
 
-function adminDetailRichText(value) {
-  const raw = adminDetailText(value);
-  if (!raw) return "";
-  const parser = new DOMParser();
-  const doc = parser.parseFromString("<body>" + raw + "</body>", "text/html");
-  const allowed = new Set(["P","BR","STRONG","B","EM","I","UL","OL","LI","H3","H4","BLOCKQUOTE","A"]);
-  const drop = new Set(["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","SVG","MATH","FORM","INPUT","TEXTAREA","BUTTON"]);
-  $$("*", doc.body).forEach((el) => {
-    const tag = el.tagName;
-    if (drop.has(tag)) { el.remove(); return; }
-    if (!allowed.has(tag)) { el.replaceWith(...el.childNodes); return; }
-    const href = tag === "A" ? (el.getAttribute("href") || "") : "";
-    Array.from(el.attributes).forEach((attr) => el.removeAttribute(attr.name));
-    if (tag === "A" && href) {
-      try {
-        const url = new URL(href, window.location.href);
-        if (url.protocol === "https:" || url.origin === window.location.origin) {
-          el.setAttribute("href", url.href);
-          el.setAttribute("target", "_blank");
-          el.setAttribute("rel", "noopener noreferrer");
-        }
-      } catch { /* Invalid links remain plain text. */ }
-    }
-  });
-  return doc.body.innerHTML;
-}
 
 function adminDetailBody(value) {
-  const raw = adminDetailText(value);
+  const raw = cleanText(value);
   if (!raw) return "";
-  if (/<[a-z][\s\S]*>/i.test(raw)) return adminDetailRichText(raw);
+  if (/<[a-z][\s\S]*>/i.test(raw)) return sanitizeRichText(raw);
   return "<p>" + escapeHtml(raw) + "</p>";
 }
 
-function adminFirstDetailContent(values) {
-  for (const value of values) {
-    const raw = adminDetailText(value);
-    if (!raw) continue;
-    const visible = raw.replace(/&nbsp;|&#160;|&#xA0;/gi, " ")
-      .replace(/<br\s*\/?\s*>/gi, "").replace(/<[^>]*>/g, "").trim();
-    if (visible) return raw;
-  }
-  return "";
-}
 
 function adminDetailImage(value, alt, extraClass) {
   const src = imagePreview(value);
@@ -463,8 +413,8 @@ function adminDetailImage(value, alt, extraClass) {
 
 function adminDetailLocation(data, title, online, past) {
   if (online || past) return "";
-  const venue = adminDetailText(data.event_location);
-  const address = adminDetailText(data.address);
+  const venue = cleanText(data.event_location);
+  const address = cleanText(data.address);
   const venueImage = imagePreview(data.venue_image);
   const panels = [];
   if (venue || address) {
@@ -478,7 +428,7 @@ function adminDetailLocation(data, title, online, past) {
       '<img src="' + escapeHtml(venueImage) + '" alt="' + escapeHtml(venue || title) + ' venue" loading="lazy">' +
       '</figure>');
   }
-  const query = adminDetailText(data.map_query) || address;
+  const query = cleanText(data.map_query) || address;
   if (query) {
     const mapUrl = "https://www.google.com/maps?q=" + encodeURIComponent(query) + "&output=embed";
     panels.push('<div class="event-location__panel event-location__map">' +
@@ -531,29 +481,29 @@ function openPreviewEntryDetail(key, mode) {
   const source = adminDetailUrl(data.source_url);
   const eventMeta = [
     adminDetailDate(data.event_date),
-    adminDetailText(data.event_time),
-    online ? "" : adminDetailText(data.event_location)
+    cleanText(data.event_time),
+    online ? "" : cleanText(data.event_location)
   ].filter(Boolean).join(" · ");
 
   const isStory = mode === "story";
   const title = isStory
-    ? (adminDetailText(data.post_title) || adminDetailText(data.title) || "Untitled story")
-    : (adminDetailText(data.calendar_title) || adminDetailText(data.title) || "Untitled event");
+    ? (cleanText(data.post_title) || cleanText(data.title) || "Untitled story")
+    : (cleanText(data.calendar_title) || cleanText(data.title) || "Untitled event");
   const bodyValue = isStory
-    ? adminFirstDetailContent([data.post_body, data.event_details, data.post_summary, data.event_summary])
+    ? firstContent(data.post_body, data.event_details, data.post_summary, data.event_summary)
     : (past
-      ? adminFirstDetailContent([data.post_body, data.event_details, data.post_summary, data.event_summary])
-      : adminFirstDetailContent([data.event_details, data.event_summary, data.post_body, data.post_summary]));
+      ? firstContent(data.post_body, data.event_details, data.post_summary, data.event_summary)
+      : firstContent(data.event_details, data.event_summary, data.post_body, data.post_summary));
   const body = adminDetailBody(bodyValue);
   const imageValue = isStory
     ? (past
-      ? adminFirstDetailContent([data.post_image, data.event_image, data.venue_image])
-      : adminFirstDetailContent([data.post_image, data.venue_image, data.event_image]))
+      ? firstContent(data.post_image, data.event_image, data.venue_image)
+      : firstContent(data.post_image, data.venue_image, data.event_image))
     : (past
-      ? adminFirstDetailContent([data.event_image, data.post_image, data.venue_image])
+      ? firstContent(data.event_image, data.post_image, data.venue_image)
       : (online
-        ? adminFirstDetailContent([data.post_image, data.event_image])
-        : adminFirstDetailContent([data.venue_image, data.post_image, data.event_image])));
+        ? firstContent(data.post_image, data.event_image)
+        : firstContent(data.venue_image, data.post_image, data.event_image)));
   const alt = isStory
     ? (data.post_image_alt || data.event_image_alt || title)
     : (data.event_image_alt || data.post_image_alt || title);
@@ -615,8 +565,8 @@ function openPreviewPersonDetail(key) {
   const status = previewStatus(group);
   const image = imagePreview(person.image);
   const role = [person.role, person.organization].filter(Boolean).join(" · ");
-  const officeRole = adminDetailText(person.office_impact_role);
-  const bio = adminDetailText(person.bio_long) || adminDetailText(person.bio);
+  const officeRole = cleanText(person.office_impact_role);
+  const bio = cleanText(person.bio_long) || cleanText(person.bio);
   const linkedin = adminDetailUrl(person.linkedin_url);
   const content = '<div class="dialog-body person-dialog">' +
     '<div class="person-dialog__header">' +
@@ -659,8 +609,9 @@ function renderList() {
     const row = group.draft || group.live;
     const title = state.tab === "entries" ? entryTitle(row) : (row.data?.name || group.key);
     const kind = state.tab === "entries" ? (row.kind || "story").replace("_", " + ") : "Team";
+    const hasChanges = hasUnpublishedChanges(group);
     const statusMarkup = group.live
-      ? `<span class="admin-status admin-status--live">Live</span>${group.draft ? '<span class="admin-status admin-status--draft">Draft edits</span>' : ""}`
+      ? `<span class="admin-status admin-status--live">Live</span>${hasChanges ? '<span class="admin-status admin-status--draft">Draft edits</span>' : ""}`
       : '<span class="admin-status admin-status--draft">Draft</span>';
     return `
       <article class="admin-record">
@@ -670,7 +621,7 @@ function renderList() {
           <span class="admin-record__key">${escapeHtml(group.key)}</span>
         </div>
         <div class="admin-record__actions">
-          <div class="admin-record__statuses" aria-label="${group.live ? (group.draft ? "Published live, with unpublished draft edits" : "Published live") : "Draft, not published"}">
+          <div class="admin-record__statuses" aria-label="${group.live ? (hasChanges ? "Published live, with unpublished draft edits" : "Published live") : "Draft, not published"}">
             ${statusMarkup}
           </div>
           <button class="admin-small-button" type="button" data-edit-key="${escapeHtml(group.key)}">Edit</button>
@@ -697,19 +648,25 @@ function imagePreview(value) {
 function renderField(field, data) {
   const value = fieldValue(data, field);
   const id = "field-" + field.name;
+  const baseline = state.current?.baselineData;
+  const changed = Boolean(baseline) && value !== fieldValue(baseline, field);
+  const fieldClass = changed ? " admin-field--changed" : "";
+  const changedLabel = changed ? '<small class="admin-field__change">Changed from live version</small>' : "";
   const help = field.help ? `<small>${escapeHtml(field.help)}</small>` : "";
   if (field.type === "checkbox") {
     return `
-      <label class="admin-field admin-field--check" for="${id}">
+      <label class="admin-field admin-field--check${fieldClass}" for="${id}">
         <input id="${id}" name="${field.name}" type="checkbox" ${value ? "checked" : ""}>
         <span>${escapeHtml(field.label)}</span>
+        ${changedLabel}
       </label>`;
   }
   if (field.type === "image") {
     const preview = imagePreview(value);
     return `
-      <div class="admin-field admin-field--wide">
+      <div class="admin-field admin-field--wide${fieldClass}">
         <label for="${id}">${escapeHtml(field.label)}</label>
+        ${changedLabel}
         <input type="hidden" name="${field.name}" value="${escapeHtml(value)}">
         <div class="admin-image-row">
           <div class="admin-image-preview">${preview ? `<img src="${escapeHtml(preview)}" alt="">` : '<span>No image selected</span>'}</div>
@@ -733,8 +690,9 @@ function renderField(field, data) {
       `<option value="${escapeHtml(option)}" ${value === option ? "selected" : ""}>${escapeHtml(option)}</option>`
     ).join("");
     return `
-      <div class="admin-field">
+      <div class="admin-field${fieldClass}">
         <label for="${id}">${escapeHtml(field.label)}${field.required ? " *" : ""}</label>
+        ${changedLabel}
         <select id="${id}" name="${field.name}" ${field.required ? "required" : ""}>
           <option value="">Select…</option>${options}
         </select>${help}
@@ -745,8 +703,9 @@ function renderField(field, data) {
     ? `<textarea id="${id}" name="${field.name}" rows="${field.type === "rich" ? 9 : 3}" ${field.required ? "required" : ""}>${escapeHtml(value)}</textarea>`
     : `<input id="${id}" name="${field.name}" type="${field.type}" value="${escapeHtml(value)}" ${field.required ? "required" : ""}>`;
   return `
-    <div class="admin-field ${field.type === "rich" || field.type === "textarea" ? "admin-field--wide" : ""}">
+    <div class="admin-field ${field.type === "rich" || field.type === "textarea" ? "admin-field--wide" : ""}${fieldClass}">
       <label for="${id}">${escapeHtml(field.label)}${field.required ? " *" : ""}</label>
+      ${changedLabel}
       ${input}${help}
     </div>`;
 }
@@ -785,7 +744,7 @@ function renderForm() {
 function newEntry(kind) {
   state.current = {
     table: "entries", key: "", kind, isNew: true, draftExists: false, liveExists: false,
-    data: { kind, published: true, featured_post: false },
+    data: { kind, published: true, featured_post: false }, baselineData: null,
   };
   renderForm();
 }
@@ -793,7 +752,7 @@ function newEntry(kind) {
 function newPerson() {
   state.current = {
     table: "people", key: "", kind: null, isNew: true, draftExists: false, liveExists: false,
-    data: { published: true, featured: false },
+    data: { published: true, featured: false }, baselineData: null,
   };
   renderForm();
 }
@@ -814,6 +773,7 @@ function openExisting(key) {
     draftExists: Boolean(draft),
     liveExists: Boolean(live),
     data: { ...(source.data || {}) },
+    baselineData: live ? { ...(live.data || {}) } : null,
   };
   renderForm();
 }
