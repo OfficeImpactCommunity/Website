@@ -144,6 +144,19 @@ function groupedRows() {
   }));
 }
 
+function hasUnpublishedChanges(group) {
+  if (!group?.draft) return false;
+  if (!group.live) return true;
+  const stable = (value) => {
+    if (Array.isArray(value)) return value.map(stable);
+    if (value && typeof value === "object") {
+      return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stable(value[key])]));
+    }
+    return value;
+  };
+  return JSON.stringify(stable(group.draft.data || {})) !== JSON.stringify(stable(group.live.data || {}));
+}
+
 
 
 function previewStatus(group) {
@@ -151,8 +164,8 @@ function previewStatus(group) {
     return {
       label: "Live on website",
       className: "live",
-      note: group.draft
-        ? "This item is published. The preview below shows saved draft edits; the public website continues to show the live version until you publish these changes."
+      note: hasUnpublishedChanges(group)
+        ? "The preview shows saved changes that are not published yet. The public website still shows the live version."
         : "This is the version currently shown on the public website.",
     };
   }
@@ -168,7 +181,7 @@ function previewStatusBadges(group) {
   const liveBadge = group.live
     ? '<span class="admin-preview-status admin-preview-status--live">Live on website</span>'
     : "";
-  const draftBadge = group.draft
+  const draftBadge = hasUnpublishedChanges(group)
     ? `<span class="admin-preview-status admin-preview-status--draft">${group.live ? "Draft edits saved" : "Draft preview"}</span>`
     : "";
   return liveBadge + draftBadge;
@@ -596,8 +609,9 @@ function renderList() {
     const row = group.draft || group.live;
     const title = state.tab === "entries" ? entryTitle(row) : (row.data?.name || group.key);
     const kind = state.tab === "entries" ? (row.kind || "story").replace("_", " + ") : "Team";
+    const hasChanges = hasUnpublishedChanges(group);
     const statusMarkup = group.live
-      ? `<span class="admin-status admin-status--live">Live</span>${group.draft ? '<span class="admin-status admin-status--draft">Draft edits</span>' : ""}`
+      ? `<span class="admin-status admin-status--live">Live</span>${hasChanges ? '<span class="admin-status admin-status--draft">Draft edits</span>' : ""}`
       : '<span class="admin-status admin-status--draft">Draft</span>';
     return `
       <article class="admin-record">
@@ -607,7 +621,7 @@ function renderList() {
           <span class="admin-record__key">${escapeHtml(group.key)}</span>
         </div>
         <div class="admin-record__actions">
-          <div class="admin-record__statuses" aria-label="${group.live ? (group.draft ? "Published live, with unpublished draft edits" : "Published live") : "Draft, not published"}">
+          <div class="admin-record__statuses" aria-label="${group.live ? (hasChanges ? "Published live, with unpublished draft edits" : "Published live") : "Draft, not published"}">
             ${statusMarkup}
           </div>
           <button class="admin-small-button" type="button" data-edit-key="${escapeHtml(group.key)}">Edit</button>
@@ -634,19 +648,25 @@ function imagePreview(value) {
 function renderField(field, data) {
   const value = fieldValue(data, field);
   const id = "field-" + field.name;
+  const baseline = state.current?.baselineData;
+  const changed = Boolean(baseline) && value !== fieldValue(baseline, field);
+  const fieldClass = changed ? " admin-field--changed" : "";
+  const changedLabel = changed ? '<small class="admin-field__change">Changed from live version</small>' : "";
   const help = field.help ? `<small>${escapeHtml(field.help)}</small>` : "";
   if (field.type === "checkbox") {
     return `
-      <label class="admin-field admin-field--check" for="${id}">
+      <label class="admin-field admin-field--check${fieldClass}" for="${id}">
         <input id="${id}" name="${field.name}" type="checkbox" ${value ? "checked" : ""}>
         <span>${escapeHtml(field.label)}</span>
+        ${changedLabel}
       </label>`;
   }
   if (field.type === "image") {
     const preview = imagePreview(value);
     return `
-      <div class="admin-field admin-field--wide">
+      <div class="admin-field admin-field--wide${fieldClass}">
         <label for="${id}">${escapeHtml(field.label)}</label>
+        ${changedLabel}
         <input type="hidden" name="${field.name}" value="${escapeHtml(value)}">
         <div class="admin-image-row">
           <div class="admin-image-preview">${preview ? `<img src="${escapeHtml(preview)}" alt="">` : '<span>No image selected</span>'}</div>
@@ -670,8 +690,9 @@ function renderField(field, data) {
       `<option value="${escapeHtml(option)}" ${value === option ? "selected" : ""}>${escapeHtml(option)}</option>`
     ).join("");
     return `
-      <div class="admin-field">
+      <div class="admin-field${fieldClass}">
         <label for="${id}">${escapeHtml(field.label)}${field.required ? " *" : ""}</label>
+        ${changedLabel}
         <select id="${id}" name="${field.name}" ${field.required ? "required" : ""}>
           <option value="">Select…</option>${options}
         </select>${help}
@@ -682,8 +703,9 @@ function renderField(field, data) {
     ? `<textarea id="${id}" name="${field.name}" rows="${field.type === "rich" ? 9 : 3}" ${field.required ? "required" : ""}>${escapeHtml(value)}</textarea>`
     : `<input id="${id}" name="${field.name}" type="${field.type}" value="${escapeHtml(value)}" ${field.required ? "required" : ""}>`;
   return `
-    <div class="admin-field ${field.type === "rich" || field.type === "textarea" ? "admin-field--wide" : ""}">
+    <div class="admin-field ${field.type === "rich" || field.type === "textarea" ? "admin-field--wide" : ""}${fieldClass}">
       <label for="${id}">${escapeHtml(field.label)}${field.required ? " *" : ""}</label>
+      ${changedLabel}
       ${input}${help}
     </div>`;
 }
@@ -722,7 +744,7 @@ function renderForm() {
 function newEntry(kind) {
   state.current = {
     table: "entries", key: "", kind, isNew: true, draftExists: false, liveExists: false,
-    data: { kind, published: true, featured_post: false },
+    data: { kind, published: true, featured_post: false }, baselineData: null,
   };
   renderForm();
 }
@@ -730,7 +752,7 @@ function newEntry(kind) {
 function newPerson() {
   state.current = {
     table: "people", key: "", kind: null, isNew: true, draftExists: false, liveExists: false,
-    data: { published: true, featured: false },
+    data: { published: true, featured: false }, baselineData: null,
   };
   renderForm();
 }
@@ -751,6 +773,7 @@ function openExisting(key) {
     draftExists: Boolean(draft),
     liveExists: Boolean(live),
     data: { ...(source.data || {}) },
+    baselineData: live ? { ...(live.data || {}) } : null,
   };
   renderForm();
 }
