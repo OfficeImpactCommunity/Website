@@ -418,6 +418,17 @@
  .admin-preview-stories{grid-template-columns:1fr}
  .admin-preview-people-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+@media(max-width:760px){
+ /* Keep the publication note on its own row instead of squeezing it between the status and actions. */
+ .admin-preview-card__note{
+  flex:1 0 100%;
+  order:2;
+  width:100%;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+ }
+ .admin-preview-card__bar .admin-small-button{order:3}
+}
 @media(max-width:480px){
  .admin-preview-people-grid{grid-template-columns:1fr}
  .admin-preview-event .event-item{grid-template-columns:58px minmax(0,1fr)}
@@ -531,4 +542,68 @@
 .admin-field--changed select {
   border-color: #d8a34c;
   background: #fffdf8;
+}
+
+
+/* Consistent management panel, visually separated from the public content preview. */
+.admin-preview-item{display:flex;flex-direction:column;gap:0;min-width:0}
+.admin-preview-controls{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px;
+  padding:11px 14px;
+  border:1px solid var(--line);
+  border-bottom:0;
+  border-radius:14px 14px 0 0;
+  background:#f5f3ef;
+}
+.admin-preview-controls__status{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.admin-preview-controls .admin-preview-card__note{margin:0;font-size:11px;line-height:1.4}
+.admin-preview-controls__actions{display:flex;align-items:center;gap:7px;white-space:nowrap}
+.admin-preview-controls__actions .admin-small-button{padding:7px 11px}
+.admin-preview-item>.admin-preview-event,
+.admin-preview-item>.story-card,
+.admin-preview-item>.person-card{border-radius:0 0 15px 15px}
+.admin-preview-item>.admin-preview-event{border-top:0}
+.admin-preview-item>.story-card{border-top-left-radius:0;border-top-right-radius:0}
+.admin-preview-item>.person-card{border-top-left-radius:0;border-top-right-radius:0}
+.admin-preview-event{border-radius:0 0 15px 15px}
+.admin-preview-event .event-item{border-radius:0 0 12px 12px}
+.admin-preview-person .admin-preview-card__bar{display:none}
+.admin-preview-stories>.admin-preview-item{min-width:0}
+.admin-preview-people-grid>.admin-preview-item{min-width:0}
+.admin-preview-people-grid .admin-preview-person{height:100%}
+.admin-preview-title{justify-content:flex-start}
+@media(max-width:760px){
+ .admin-preview-controls{grid-template-columns:1fr;gap:8px;align-items:start}
+ .admin-preview-controls__status{order:0}
+ .admin-preview-controls .admin-preview-card__note{order:1;width:100%}
+ .admin-preview-controls__actions{order:2}
+ .admin-preview-controls__actions .admin-small-button{flex:0 0 auto}
+}
+
+/* Team controls: status and actions share the first row; explanation sits below. */
+.admin-preview-controls--person{
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"status actions" "note note";
+  align-items:center;
+}
+.admin-preview-controls--person .admin-preview-controls__status{grid-area:status}
+.admin-preview-controls--person .admin-preview-card__note{grid-area:note}
+.admin-preview-controls--person .admin-preview-controls__actions{grid-area:actions}
+@media(max-width:760px){
+ .admin-preview-controls--person{
+  grid-template-columns:1fr;
+  grid-template-areas:"status" "note" "actions";
+ }
+}
+
+.admin-footer .admin-build-info{
+  grid-column:1/-1;
+  display:block;
+  margin-top:8px;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.4;
 }
