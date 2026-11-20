@@ -598,3 +598,12 @@
   grid-template-areas:"status" "note" "actions";
  }
 }
+
+.admin-footer .admin-build-info{
+  grid-column:1/-1;
+  display:block;
+  margin-top:8px;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.4;
+}
