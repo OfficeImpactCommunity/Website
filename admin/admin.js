@@ -994,7 +994,7 @@ async function uploadEditedImage(input, file) {
     status.textContent = "Uploaded";
   } catch (error) {
     status.textContent = "";
-    notify(error.message || "Image upload failed.", true);
+    throw error;
   }
 }
 
