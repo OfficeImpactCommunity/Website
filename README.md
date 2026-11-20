@@ -5,13 +5,13 @@ The Office Impact Community website is a static site hosted on GitHub Pages. Sup
 ## Architecture
 
 - **Website:** static HTML, CSS and JavaScript on GitHub Pages.
-- **Content:** Supabase stores events, stories and team profiles. The public website reads published content.
+- **Content:** Supabase stores events, stories and team profiles. The public website reads published content directly from Supabase.
 - **Admin:** Google sign-in is used for the administration area. Editors manage drafts; Admins can manage access and publish content.
 - **Images:** existing site images remain in the repository. New images uploaded from Admin are stored in Supabase Storage.
 
 ## Branches and publishing
 
-- **`DevelopSupabase`** is the development and review branch.
+- **`Develop`** is the development and review branch.
 - Changes to this branch deploy automatically to the [preview website](https://officeimpactcommunity.github.io/Website-preview/).
 - **`main`** is production. Preview changes should be reviewed and approved before they are merged into `main`.
 

@@ -23,7 +23,7 @@ Supabase Storage has 15 objects in `office-impact-media`. Two unique object path
 
 ## Review notes
 
-- No LIGO-specific code was found in the repository search. The retired logo-processing workflow is removed; no unrelated code was labelled LIGO without evidence.
+- Removed the old-logo adjustment workflow and source asset. No remaining logo-adjustment script is required by the current site.
 - No Supabase schema, RLS policy, authentication setting, storage object or production branch was modified.
 - Common utilities were consolidated; UI-specific preview and public rendering functions remain separate to avoid coupling.
 - No configured frontend test suite/build step was present. Preview deployment and manual smoke tests remain necessary before production merge.
