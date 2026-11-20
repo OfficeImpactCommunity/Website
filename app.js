@@ -268,17 +268,38 @@ async function loadSupabaseContent() {
 }
 
 
-function setupAdminNavigation() {
-  // The link is deliberately visible to everyone; the admin page enforces access.
+async function setupAdminNavigation() {
   const footerLink = $("#adminNavLink");
-  const headerLink = $(".nav-admin-link");
-  if (footerLink) footerLink.hidden = false;
-  if (headerLink) headerLink.hidden = false;
+  if (!footerLink) return;
+
+  const updateVisibility = async (user) => {
+    footerLink.hidden = true;
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from("editors")
+        .select("role, active")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      footerLink.hidden = !(data?.active && ["admin", "editor"].includes(data.role));
+    } catch (error) {
+      console.warn("Could not verify admin navigation access.", error);
+      footerLink.hidden = true;
+    }
+  };
+
+  const { data: { session } } = await supabase.auth.getSession();
+  await updateVisibility(session?.user || null);
+  supabase.auth.onAuthStateChange((_event, nextSession) => {
+    window.setTimeout(() => updateVisibility(nextSession?.user || null), 0);
+  });
 }
 
 async function init() {
   try {
     await loadSupabaseContent();
+    await setupAdminNavigation();
 
     state.calendarDate = startOfMonth(startOfToday());
 
@@ -287,7 +308,6 @@ async function init() {
     renderStories();
     renderPeople();
     setupMotion();
-    setupAdminNavigation();
   } catch (error) {
     console.error(error);
     showLoadErrors();

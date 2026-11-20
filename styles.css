@@ -688,3 +688,18 @@ button.month-tile{cursor:pointer}
     font-size: 8px;
   }
 }
+
+
+/* Authenticated administration link in the site footer */
+.footer-admin-link {
+  color: var(--accent-deep);
+  font-weight: 850;
+  text-decoration: none;
+}
+.footer-admin-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.footer-admin-link[hidden] {
+  display: none !important;
+}
