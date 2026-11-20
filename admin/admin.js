@@ -947,7 +947,8 @@ function openImageEditor(input, file) {
   image.onload = () => {
     imageCropper = new window.Cropper(image, {
       viewMode: 1,
-      autoCropArea: 1,
+      dragMode: "move",
+      autoCropArea: 0.8,
       responsive: true,
       background: false,
       movable: true,
