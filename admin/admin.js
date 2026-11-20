@@ -161,20 +161,31 @@ function initials(name = "") {
 }
 
 function previewStatus(group) {
-  if (group.draft) {
+  if (group.live) {
     return {
-      label: "Draft preview",
-      className: "draft",
-      note: group.live
-        ? "You are previewing unpublished edits. The current Live version remains on the public website until you publish these changes."
-        : "Not visible on the public website until published.",
+      label: "Live on website",
+      className: "live",
+      note: group.draft
+        ? "This item is published. The preview below shows saved draft edits; the public website continues to show the live version until you publish these changes."
+        : "This is the version currently shown on the public website.",
     };
   }
   return {
-    label: "Live on website",
-    className: "live",
-    note: "This is the version currently shown on the public website.",
+    label: "Draft preview",
+    className: "draft",
+    note: "Not visible on the public website until published.",
   };
+}
+
+function previewStatusBadges(group) {
+  const status = previewStatus(group);
+  const liveBadge = group.live
+    ? '<span class="admin-preview-status admin-preview-status--live">Live on website</span>'
+    : "";
+  const draftBadge = group.draft
+    ? `<span class="admin-preview-status admin-preview-status--draft">${group.live ? "Draft edits saved" : "Draft preview"}</span>`
+    : "";
+  return liveBadge + draftBadge;
 }
 
 function previewDate(value) {
@@ -216,7 +227,7 @@ function renderEntryPreview(group, mode = "both") {
     return `
       <div class="admin-preview-event">
         <div class="admin-preview-card__bar">
-          <span class="admin-preview-status admin-preview-status--${status.className}">${status.label}</span>
+          ${previewStatusBadges(group)}
           <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
           <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(key)}">Edit</button>
           <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(key)}" data-preview-detail-kind="event">View details</button>
@@ -253,7 +264,7 @@ function renderEntryPreview(group, mode = "both") {
     return `
       <article class="story-card${imageClass}">
         <div class="admin-preview-card__bar">
-          <span class="admin-preview-status admin-preview-status--${status.className}">${status.label}</span>
+          ${previewStatusBadges(group)}
           <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
           <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(key)}">Edit</button>
           <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(key)}" data-preview-detail-kind="story">View details</button>
@@ -284,7 +295,7 @@ function renderPeoplePreview(group) {
   return `
     <article class="person-card admin-preview-person">
       <div class="admin-preview-card__bar">
-        <span class="admin-preview-status admin-preview-status--${status.className}">${status.label}</span>
+        ${previewStatusBadges(group)}
         <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
         <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(group.key)}">Edit</button>
         <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(group.key)}" data-preview-detail-kind="person">View details</button>
