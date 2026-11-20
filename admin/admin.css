@@ -582,3 +582,19 @@
  .admin-preview-controls__actions{order:2}
  .admin-preview-controls__actions .admin-small-button{flex:0 0 auto}
 }
+
+/* Team controls: status and actions share the first row; explanation sits below. */
+.admin-preview-controls--person{
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"status actions" "note note";
+  align-items:center;
+}
+.admin-preview-controls--person .admin-preview-controls__status{grid-area:status}
+.admin-preview-controls--person .admin-preview-card__note{grid-area:note}
+.admin-preview-controls--person .admin-preview-controls__actions{grid-area:actions}
+@media(max-width:760px){
+ .admin-preview-controls--person{
+  grid-template-columns:1fr;
+  grid-template-areas:"status" "note" "actions";
+ }
+}

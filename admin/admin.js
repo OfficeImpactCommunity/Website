@@ -200,7 +200,7 @@ function previewImage(value) {
 function renderPreviewControls(group, kind) {
   const status = previewStatus(group);
   return `
-    <div class="admin-preview-controls">
+    <div class="admin-preview-controls${kind === "person" ? " admin-preview-controls--person" : ""}">
       <div class="admin-preview-controls__status">${previewStatusBadges(group)}</div>
       <p class="admin-preview-card__note">${escapeHtml(status.note)}</p>
       <div class="admin-preview-controls__actions">
