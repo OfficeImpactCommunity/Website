@@ -197,6 +197,19 @@ function previewImage(value) {
   return imagePreview(value);
 }
 
+function renderPreviewControls(group, kind) {
+  const status = previewStatus(group);
+  return `
+    <div class="admin-preview-controls${kind === "person" ? " admin-preview-controls--person" : ""}">
+      <div class="admin-preview-controls__status">${previewStatusBadges(group)}</div>
+      <p class="admin-preview-card__note">${escapeHtml(status.note)}</p>
+      <div class="admin-preview-controls__actions">
+        <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(group.key)}">Edit</button>
+        <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(group.key)}" data-preview-detail-kind="${kind}">View details</button>
+      </div>
+    </div>`;
+}
+
 function renderEntryPreview(group, mode = "both") {
   const row = group.draft || group.live;
   const data = row?.data || {};
@@ -224,13 +237,9 @@ function renderEntryPreview(group, mode = "both") {
     if (isPast || date.getFullYear() !== today.getFullYear()) metaParts.unshift(String(date.getFullYear()));
 
     return `
-      <div class="admin-preview-event">
-        <div class="admin-preview-card__bar">
-          ${previewStatusBadges(group)}
-          <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
-          <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(key)}">Edit</button>
-          <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(key)}" data-preview-detail-kind="event">View details</button>
-        </div>
+      <div class="admin-preview-item">
+        ${renderPreviewControls(group, "event")}
+        <div class="admin-preview-event">
         <article class="event-item">
           <div class="event-date"><strong>${date.getDate()}</strong><span>${escapeHtml(month)}</span></div>
           <div class="event-info">
@@ -239,6 +248,7 @@ function renderEntryPreview(group, mode = "both") {
           </div>
           <span class="event-open" aria-hidden="true">&nearr;</span>
         </article>
+        </div>
       </div>`;
   })() : "";
 
@@ -261,13 +271,9 @@ function renderEntryPreview(group, mode = "both") {
     const imageClass = image ? (featured ? " story-card--with-image" : " story-card--with-thumbnail") : "";
 
     return `
+      <div class="admin-preview-item">
+      ${renderPreviewControls(group, "story")}
       <article class="story-card${imageClass}">
-        <div class="admin-preview-card__bar">
-          ${previewStatusBadges(group)}
-          <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
-          <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(key)}">Edit</button>
-          <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(key)}" data-preview-detail-kind="story">View details</button>
-        </div>
         ${image && featured ? `<div class="story-card__image"><img src="${escapeHtml(image)}" alt="${escapeHtml(alt)}" loading="lazy"></div>` : ""}
         ${image && !featured ? `<div class="story-card__thumb"><img src="${escapeHtml(image)}" alt="${escapeHtml(alt)}" loading="lazy"></div>` : ""}
         <div class="story-card__body">
@@ -276,7 +282,8 @@ function renderEntryPreview(group, mode = "both") {
           <p>${escapeHtml(summary || "Add a short introduction to preview the story card.")}</p>
           <div class="story-card__footer"><span>${escapeHtml(source)}</span><span>Read &rarr;</span></div>
         </div>
-      </article>`;
+      </article>
+    </div>`;
   })() : "";
 
   return eventMarkup + storyMarkup;
@@ -292,13 +299,9 @@ function renderPeoplePreview(group) {
   const shortBio = String(person.bio || "").trim();
 
   return `
-    <article class="person-card admin-preview-person">
-      <div class="admin-preview-card__bar">
-        ${previewStatusBadges(group)}
-        <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
-        <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(group.key)}">Edit</button>
-        <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(group.key)}" data-preview-detail-kind="person">View details</button>
-      </div>
+    <div class="admin-preview-item">
+      ${renderPreviewControls(group, "person")}
+      <article class="person-card admin-preview-person">
       <div class="person-avatar">
         <span>${escapeHtml(initials(person.name || ""))}</span>
         ${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(person.name || "")}" loading="lazy">` : ""}
@@ -310,7 +313,8 @@ function renderPeoplePreview(group) {
         ${shortBio ? `<p class="person-short-bio">${escapeHtml(shortBio)}</p>` : ""}
         <div class="person-actions"><span class="profile-link">View profile &rarr;</span></div>
       </div>
-    </article>`;
+      </article>
+    </div>`;
 }
 
 function renderContentPreview() {
@@ -911,25 +915,69 @@ function removeImage(button) {
   if (status) status.textContent = "Photo removed — save draft to apply.";
 }
 
-async function uploadImage(input) {
-  const file = input.files?.[0];
-  if (!file) return;
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-    notify("Please choose a JPG, PNG or WebP image.", true);
+let imageCropper = null;
+let imageCropObjectUrl = null;
+let pendingImageInput = null;
+
+function closeImageEditor() {
+  const dialog = $("#imageCropDialog");
+  if (imageCropper) {
+    imageCropper.destroy();
+    imageCropper = null;
+  }
+  if (imageCropObjectUrl) {
+    URL.revokeObjectURL(imageCropObjectUrl);
+    imageCropObjectUrl = null;
+  }
+  if (pendingImageInput) pendingImageInput.value = "";
+  pendingImageInput = null;
+  if (dialog?.open) dialog.close();
+}
+
+function openImageEditor(input, file) {
+  if (typeof window.Cropper !== "function") {
+    notify("Image editor could not be loaded. Please refresh and try again.", true);
     input.value = "";
     return;
   }
-  if (file.size > 10 * 1024 * 1024) {
-    notify("The image must be 10 MB or smaller.", true);
-    input.value = "";
-    return;
-  }
+  const dialog = $("#imageCropDialog");
+  const image = $("#imageCropSource");
+  pendingImageInput = input;
+  imageCropObjectUrl = URL.createObjectURL(file);
+  image.onload = () => {
+    imageCropper = new window.Cropper(image, {
+      viewMode: 1,
+      autoCropArea: 1,
+      responsive: true,
+      background: false,
+      movable: true,
+      zoomable: true,
+      rotatable: true,
+      scalable: true,
+      guides: true,
+      center: true,
+      cropBoxMovable: true,
+      cropBoxResizable: true,
+      toggleDragModeOnDblclick: false,
+    });
+  };
+  image.onerror = () => {
+    closeImageEditor();
+    notify("This image could not be opened.", true);
+  };
+  image.src = imageCropObjectUrl;
+  dialog.showModal();
+}
+
+async function uploadEditedImage(input, file) {
   const name = input.dataset.uploadField;
   const status = $(`[data-upload-status="${name}"]`);
   status.textContent = "Uploading…";
   try {
+    if (file.size > 10 * 1024 * 1024) throw new Error("The edited image must be 10 MB or smaller.");
     const key = state.current.key || slug($("#contentForm").elements.id?.value || $("#contentForm").elements.name?.value || "new-item");
-    const path = `${state.current.table}/${key}/${Date.now()}-${slug(file.name.replace(/\.[^.]+$/, "")) || "image"}.${file.name.split(".").pop().toLowerCase()}`;
+    const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+    const path = `${state.current.table}/${key}/${Date.now()}-${slug(file.name.replace(/\.[^.]+$/, "")) || "image"}.${extension}`;
     const { error } = await supabase.storage.from("office-impact-media").upload(path, file, {
       upsert: true,
       contentType: file.type,
@@ -946,8 +994,59 @@ async function uploadImage(input) {
     status.textContent = "Uploaded";
   } catch (error) {
     status.textContent = "";
-    notify(error.message || "Image upload failed.", true);
+    throw error;
   }
+}
+
+async function applyImageEdit() {
+  if (!imageCropper || !pendingImageInput) return;
+  const apply = $("#imageCropApply");
+  const input = pendingImageInput;
+  const original = input.files?.[0];
+  if (!original) return closeImageEditor();
+  apply.disabled = true;
+  apply.textContent = "Processing…";
+  try {
+    const type = original.type === "image/png" ? "image/png" : original.type === "image/webp" ? "image/webp" : "image/jpeg";
+    const canvas = imageCropper.getCroppedCanvas({
+      maxWidth: 3000,
+      maxHeight: 3000,
+      imageSmoothingEnabled: true,
+      imageSmoothingQuality: "high",
+    });
+    const blob = await new Promise((resolve, reject) => canvas.toBlob(
+      (result) => result ? resolve(result) : reject(new Error("Could not process this image.")),
+      type,
+      0.92
+    ));
+    const edited = new File([blob], original.name.replace(/\.[^.]+$/, "") + (type === "image/png" ? ".png" : type === "image/webp" ? ".webp" : ".jpg"), {
+      type,
+      lastModified: Date.now(),
+    });
+    await uploadEditedImage(input, edited);
+    closeImageEditor();
+  } catch (error) {
+    notify(error.message || "Image editing failed.", true);
+  } finally {
+    apply.disabled = false;
+    apply.textContent = "Apply & upload";
+  }
+}
+
+function uploadImage(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    notify("Please choose a JPG, PNG or WebP image.", true);
+    input.value = "";
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    notify("The image must be 10 MB or smaller.", true);
+    input.value = "";
+    return;
+  }
+  openImageEditor(input, file);
 }
 
 async function loadEditorAccess() {
@@ -1218,6 +1317,22 @@ async function init() {
   $("#editorFields").addEventListener("click", (event) => {
     const button = event.target.closest("[data-remove-image]");
     if (button) removeImage(button);
+  });
+  $("#imageCropDialog").addEventListener("click", (event) => {
+    const action = event.target.closest("[data-crop-action]")?.dataset.cropAction;
+    if (!action || !imageCropper) return;
+    if (action === "rotate-left") imageCropper.rotate(-90);
+    if (action === "rotate-right") imageCropper.rotate(90);
+    if (action === "flip-horizontal") imageCropper.scaleX((imageCropper.getData().scaleX || 1) * -1);
+    if (action === "flip-vertical") imageCropper.scaleY((imageCropper.getData().scaleY || 1) * -1);
+    if (action === "reset") imageCropper.reset();
+  });
+  $("#imageCropApply").addEventListener("click", applyImageEdit);
+  $("#imageCropCancel").addEventListener("click", closeImageEditor);
+  $("#imageCropCancelTop").addEventListener("click", closeImageEditor);
+  $("#imageCropDialog").addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeImageEditor();
   });
 
   const { data: { session } } = await supabase.auth.getSession();

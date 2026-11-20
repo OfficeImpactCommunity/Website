@@ -543,3 +543,103 @@
   border-color: #d8a34c;
   background: #fffdf8;
 }
+
+
+/* Consistent management panel, visually separated from the public content preview. */
+.admin-preview-item{display:flex;flex-direction:column;gap:0;min-width:0}
+.admin-preview-controls{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px;
+  padding:11px 14px;
+  border:1px solid var(--line);
+  border-bottom:0;
+  border-radius:14px 14px 0 0;
+  background:#f5f3ef;
+}
+.admin-preview-controls__status{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.admin-preview-controls .admin-preview-card__note{margin:0;font-size:11px;line-height:1.4}
+.admin-preview-controls__actions{display:flex;align-items:center;gap:7px;white-space:nowrap}
+.admin-preview-controls__actions .admin-small-button{padding:7px 11px}
+.admin-preview-item>.admin-preview-event,
+.admin-preview-item>.story-card,
+.admin-preview-item>.person-card{border-radius:0 0 15px 15px}
+.admin-preview-item>.admin-preview-event{border-top:0}
+.admin-preview-item>.story-card{border-top-left-radius:0;border-top-right-radius:0}
+.admin-preview-item>.person-card{border-top-left-radius:0;border-top-right-radius:0}
+.admin-preview-event{border-radius:0 0 15px 15px}
+.admin-preview-event .event-item{border-radius:0 0 12px 12px}
+.admin-preview-person .admin-preview-card__bar{display:none}
+.admin-preview-stories>.admin-preview-item{min-width:0}
+.admin-preview-people-grid>.admin-preview-item{min-width:0}
+.admin-preview-people-grid .admin-preview-person{height:100%}
+.admin-preview-title{justify-content:flex-start}
+@media(max-width:760px){
+ .admin-preview-controls{grid-template-columns:1fr;gap:8px;align-items:start}
+ .admin-preview-controls__status{order:0}
+ .admin-preview-controls .admin-preview-card__note{order:1;width:100%}
+ .admin-preview-controls__actions{order:2}
+ .admin-preview-controls__actions .admin-small-button{flex:0 0 auto}
+}
+
+/* Team controls: status and actions share the first row; explanation sits below. */
+.admin-preview-controls--person{
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"status actions" "note note";
+  align-items:center;
+}
+.admin-preview-controls--person .admin-preview-controls__status{grid-area:status}
+.admin-preview-controls--person .admin-preview-card__note{grid-area:note}
+.admin-preview-controls--person .admin-preview-controls__actions{grid-area:actions}
+@media(max-width:760px){
+ .admin-preview-controls--person{
+  grid-template-columns:1fr;
+  grid-template-areas:"status" "note" "actions";
+ }
+}
+
+.admin-footer .admin-build-info{
+  grid-column:1/-1;
+  display:block;
+  margin-top:8px;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.4;
+}
+
+
+/* Lightweight image crop, rotate and mirror dialog. */
+.admin-image-editor{
+  width:min(900px,calc(100vw - 32px));
+  max-width:none;
+  max-height:calc(100dvh - 32px);
+  padding:22px;
+  border:1px solid var(--line);
+  border-radius:18px;
+  color:var(--ink);
+  background:var(--paper);
+  box-shadow:0 24px 80px rgba(0,0,0,.28);
+}
+.admin-image-editor::backdrop{background:rgba(20,20,20,.68)}
+.admin-image-editor__header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+.admin-image-editor__header h2{margin:3px 0 0;font-size:24px}
+.admin-image-editor__workspace{
+  height:min(58vh,560px);
+  min-height:260px;
+  overflow:hidden;
+  background:#242424;
+  border-radius:10px;
+}
+.admin-image-editor__workspace img{display:block;max-width:100%;max-height:100%}
+.admin-image-editor .cropper-container{max-width:100%}
+.admin-image-editor__tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.admin-image-editor__hint{margin:12px 0;color:var(--muted);font-size:13px;line-height:1.5}
+.admin-image-editor__actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.admin-image-editor__actions button:disabled{opacity:.6;cursor:wait}
+@media(max-width:600px){
+ .admin-image-editor{padding:14px;width:calc(100vw - 20px)}
+ .admin-image-editor__workspace{height:48vh;min-height:220px}
+ .admin-image-editor__tools .admin-small-button{flex:1 1 calc(50% - 8px)}
+ .admin-image-editor__actions{position:sticky;bottom:0;background:var(--paper);padding-top:10px}
+}
