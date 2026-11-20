@@ -491,3 +491,12 @@
   color: #70251d;
   text-decoration: underline;
 }
+
+
+.admin-record__statuses {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  flex-wrap: wrap;
+}

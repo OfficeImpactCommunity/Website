@@ -166,7 +166,7 @@ function previewStatus(group) {
       label: "Draft preview",
       className: "draft",
       note: group.live
-        ? "A published version remains on the website until this draft is published."
+        ? "You are previewing unpublished edits. The current Live version remains on the public website until you publish these changes."
         : "Not visible on the public website until published.",
     };
   }
@@ -648,8 +648,9 @@ function renderList() {
     const row = group.draft || group.live;
     const title = state.tab === "entries" ? entryTitle(row) : (row.data?.name || group.key);
     const kind = state.tab === "entries" ? (row.kind || "story").replace("_", " + ") : "Team";
-    const stage = group.draft ? "Draft" : "Live";
-    const statusClass = group.draft ? "draft" : "live";
+    const statusMarkup = group.live
+      ? `<span class="admin-status admin-status--live">Live</span>${group.draft ? '<span class="admin-status admin-status--draft">Draft edits</span>' : ""}`
+      : '<span class="admin-status admin-status--draft">Draft</span>';
     return `
       <article class="admin-record">
         <div class="admin-record__copy">
@@ -658,7 +659,9 @@ function renderList() {
           <span class="admin-record__key">${escapeHtml(group.key)}</span>
         </div>
         <div class="admin-record__actions">
-          <span class="admin-status admin-status--${statusClass}">${stage}</span>
+          <div class="admin-record__statuses" aria-label="${group.live ? (group.draft ? "Published live, with unpublished draft edits" : "Published live") : "Draft, not published"}">
+            ${statusMarkup}
+          </div>
           <button class="admin-small-button" type="button" data-edit-key="${escapeHtml(group.key)}">Edit</button>
         </div>
       </article>`;
