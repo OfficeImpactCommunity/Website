@@ -643,3 +643,25 @@
  .admin-image-editor__tools .admin-small-button{flex:1 1 calc(50% - 8px)}
  .admin-image-editor__actions{position:sticky;bottom:0;background:var(--paper);padding-top:10px}
 }
+
+.admin-image-editor__icon-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:38px;
+  min-width:38px;
+  height:38px;
+  padding:8px;
+}
+.admin-image-editor__icon-button svg{
+  display:block;
+  width:18px;
+  height:18px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.admin-image-editor__tools .admin-image-editor__icon-button{background:var(--surface,#f4f2ed)}
+.admin-image-editor__icon-button:focus-visible{outline:2px solid var(--accent,#555);outline-offset:2px}
