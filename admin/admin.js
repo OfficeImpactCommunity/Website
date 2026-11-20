@@ -197,6 +197,19 @@ function previewImage(value) {
   return imagePreview(value);
 }
 
+function renderPreviewControls(group, kind) {
+  const status = previewStatus(group);
+  return `
+    <div class="admin-preview-controls">
+      <div class="admin-preview-controls__status">${previewStatusBadges(group)}</div>
+      <p class="admin-preview-card__note">${escapeHtml(status.note)}</p>
+      <div class="admin-preview-controls__actions">
+        <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(group.key)}">Edit</button>
+        <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(group.key)}" data-preview-detail-kind="${kind}">View details</button>
+      </div>
+    </div>`;
+}
+
 function renderEntryPreview(group, mode = "both") {
   const row = group.draft || group.live;
   const data = row?.data || {};
@@ -224,13 +237,9 @@ function renderEntryPreview(group, mode = "both") {
     if (isPast || date.getFullYear() !== today.getFullYear()) metaParts.unshift(String(date.getFullYear()));
 
     return `
-      <div class="admin-preview-event">
-        <div class="admin-preview-card__bar">
-          ${previewStatusBadges(group)}
-          <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
-          <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(key)}">Edit</button>
-          <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(key)}" data-preview-detail-kind="event">View details</button>
-        </div>
+      <div class="admin-preview-item">
+        ${renderPreviewControls(group, "event")}
+        <div class="admin-preview-event">
         <article class="event-item">
           <div class="event-date"><strong>${date.getDate()}</strong><span>${escapeHtml(month)}</span></div>
           <div class="event-info">
@@ -239,6 +248,7 @@ function renderEntryPreview(group, mode = "both") {
           </div>
           <span class="event-open" aria-hidden="true">&nearr;</span>
         </article>
+        </div>
       </div>`;
   })() : "";
 
@@ -261,13 +271,9 @@ function renderEntryPreview(group, mode = "both") {
     const imageClass = image ? (featured ? " story-card--with-image" : " story-card--with-thumbnail") : "";
 
     return `
+      <div class="admin-preview-item">
+      ${renderPreviewControls(group, "story")}
       <article class="story-card${imageClass}">
-        <div class="admin-preview-card__bar">
-          ${previewStatusBadges(group)}
-          <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
-          <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(key)}">Edit</button>
-          <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(key)}" data-preview-detail-kind="story">View details</button>
-        </div>
         ${image && featured ? `<div class="story-card__image"><img src="${escapeHtml(image)}" alt="${escapeHtml(alt)}" loading="lazy"></div>` : ""}
         ${image && !featured ? `<div class="story-card__thumb"><img src="${escapeHtml(image)}" alt="${escapeHtml(alt)}" loading="lazy"></div>` : ""}
         <div class="story-card__body">
@@ -276,7 +282,8 @@ function renderEntryPreview(group, mode = "both") {
           <p>${escapeHtml(summary || "Add a short introduction to preview the story card.")}</p>
           <div class="story-card__footer"><span>${escapeHtml(source)}</span><span>Read &rarr;</span></div>
         </div>
-      </article>`;
+      </article>
+    </div>`;
   })() : "";
 
   return eventMarkup + storyMarkup;
@@ -292,13 +299,9 @@ function renderPeoplePreview(group) {
   const shortBio = String(person.bio || "").trim();
 
   return `
-    <article class="person-card admin-preview-person">
-      <div class="admin-preview-card__bar">
-        ${previewStatusBadges(group)}
-        <span class="admin-preview-card__note">${escapeHtml(status.note)}</span>
-        <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(group.key)}">Edit</button>
-        <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(group.key)}" data-preview-detail-kind="person">View details</button>
-      </div>
+    <div class="admin-preview-item">
+      ${renderPreviewControls(group, "person")}
+      <article class="person-card admin-preview-person">
       <div class="person-avatar">
         <span>${escapeHtml(initials(person.name || ""))}</span>
         ${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(person.name || "")}" loading="lazy">` : ""}
@@ -310,7 +313,8 @@ function renderPeoplePreview(group) {
         ${shortBio ? `<p class="person-short-bio">${escapeHtml(shortBio)}</p>` : ""}
         <div class="person-actions"><span class="profile-link">View profile &rarr;</span></div>
       </div>
-    </article>`;
+      </article>
+    </div>`;
 }
 
 function renderContentPreview() {
