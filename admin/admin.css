@@ -665,3 +665,27 @@
 }
 .admin-image-editor__tools .admin-image-editor__icon-button{background:var(--surface,#f4f2ed)}
 .admin-image-editor__icon-button:focus-visible{outline:2px solid var(--accent,#555);outline-offset:2px}
+
+/* Keep the repeated live-version explanation available on hover/focus only. */
+.admin-preview-controls .admin-preview-card__note{
+  display:none;
+  position:absolute;
+  z-index:20;
+  top:calc(100% + 7px);
+  left:0;
+  width:min(320px,calc(100vw - 40px));
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--paper);
+  color:var(--ink);
+  font-size:12px;
+  line-height:1.45;
+  box-shadow:0 8px 24px rgba(0,0,0,.14);
+}
+.admin-preview-controls{position:relative}
+.admin-preview-controls__status:hover + .admin-preview-card__note,
+.admin-preview-controls__status:focus-within + .admin-preview-card__note,
+.admin-preview-controls__status:focus + .admin-preview-card__note{
+  display:block;
+}
