@@ -609,9 +609,12 @@ function recordDate(group) {
 }
 
 function createdByMe(group) {
-  return [group.draft, group.live].filter(Boolean).some((row) =>
-    [row.created_by, row.created_by_id, row.updated_by, row.user_id].some((value) => value && String(value) === String(state.user?.id))
-  );
+  const identities = [state.user?.id, state.user?.email].filter(Boolean).map(String);
+  return [group.draft, group.live].filter(Boolean).some((row) => {
+    const data = row.data || {};
+    const creator = [row.created_by, row.created_by_id, row.created_by_email, row.creator_email, row.user_id, data.created_by, data.created_by_email];
+    return creator.some((value) => value && identities.includes(String(value)));
+  });
 }
 
 function filteredGroups() {
