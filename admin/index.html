@@ -11,7 +11,7 @@
   <title>Administration | Office Impact Community</title>
   <link rel="stylesheet" href="../styles.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
-  <link rel="stylesheet" href="./admin.css?v=20261121-admin-filters-tooltip-2">
+  <link rel="stylesheet" href="./admin.css?v=20261121-admin-filter-buttons-3">
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -179,7 +179,7 @@
       </a>
       <p>Office Impact Community website administration.</p>
       <div class="footer-links"><a href="../">Public website &nearr;</a></div>
-      <small class="admin-build-info">Admin UI v2026.11.21.3 · Updated 21 Nov 2026</small>
+      <small class="admin-build-info">Admin UI v2026.11.21.4 · Updated 21 Nov 2026</small>
     </div>
   </footer>
   <dialog id="filterDialog" class="admin-filter-dialog" aria-labelledby="filterDialogTitle">
@@ -188,23 +188,30 @@
       <button id="closeFilters" class="admin-text-button" type="button" aria-label="Close filters">&times;</button>
     </div>
     <div class="admin-filter-fields">
-      <label>Status
-        <select id="filterStatus">
-          <option value="all">All statuses</option>
-          <option value="live">Published · Live</option>
-          <option value="changes">Live with draft changes</option>
-          <option value="draft">Draft only</option>
-        </select>
-      </label>
-      <fieldset class="admin-filter-date">
-        <legend>Date</legend>
-        <label>From <input id="filterDateFrom" type="date"></label>
-        <label>To <input id="filterDateTo" type="date"></label>
-        <small>Uses event date, story publication date, or creation date for team members.</small>
-      </fieldset>
-      <label>Created by
-        <select id="filterCreator"><option value="all">Anyone</option></select>
-      </label>
+      <section class="admin-filter-group" aria-label="Filter by status">
+        <strong>Status</strong>
+        <div class="admin-filter-options">
+          <button type="button" class="admin-status admin-filter-option" data-filter-field="status" data-filter-value="all" aria-pressed="true">All</button>
+          <button type="button" class="admin-status admin-status--live admin-filter-option" data-filter-field="status" data-filter-value="live" aria-pressed="false">Live</button>
+          <button type="button" class="admin-status admin-status--draft admin-filter-option" data-filter-field="status" data-filter-value="changes" aria-pressed="false">Draft edits</button>
+          <button type="button" class="admin-status admin-status--draft admin-filter-option" data-filter-field="status" data-filter-value="draft" aria-pressed="false">Draft</button>
+        </div>
+      </section>
+      <section class="admin-filter-group" aria-label="Filter by date">
+        <strong>Date</strong>
+        <div class="admin-filter-options">
+          <button type="button" class="admin-status admin-filter-option" data-filter-field="date" data-filter-value="all" aria-pressed="true">Any date</button>
+          <button type="button" class="admin-status admin-filter-option" data-filter-field="date" data-filter-value="today" aria-pressed="false">Today</button>
+          <button type="button" class="admin-status admin-filter-option" data-filter-field="date" data-filter-value="week" aria-pressed="false">Last week</button>
+        </div>
+      </section>
+      <section class="admin-filter-group" aria-label="Filter by creator">
+        <strong>Created by</strong>
+        <div class="admin-filter-options">
+          <button type="button" class="admin-status admin-filter-option" data-filter-field="creator" data-filter-value="me" aria-pressed="false">Created by me</button>
+        </div>
+        <small>Creator names are not available, so this uses your signed-in account.</small>
+      </section>
     </div>
     <div class="admin-filter-actions">
       <button id="clearFilters" class="admin-small-button" type="button">Clear filters</button>
@@ -231,6 +238,6 @@
     </div>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js" defer></script>
-  <script type="module" src="./admin.js?v=20261121-admin-filters-tooltip-2"></script>
+  <script type="module" src="./admin.js?v=20261121-admin-filter-buttons-3"></script>
 </body>
 </html>

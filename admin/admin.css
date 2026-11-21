@@ -718,3 +718,11 @@
 .admin-preview-controls__status:focus + .admin-preview-card__note{
   display:block;
 }
+
+.admin-filter-group{display:grid;gap:10px}
+.admin-filter-group>strong{font-size:13px;font-weight:750}
+.admin-filter-options{display:flex;flex-wrap:wrap;gap:8px}
+.admin-filter-option{border:1px solid var(--line);cursor:pointer;opacity:.72}
+.admin-filter-option.is-selected{outline:2px solid var(--ink);outline-offset:2px;opacity:1}
+.admin-filter-option:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.admin-filter-group small{color:var(--muted);font-size:11px;line-height:1.4}
