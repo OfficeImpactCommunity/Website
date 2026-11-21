@@ -11,7 +11,7 @@
   <title>Administration | Office Impact Community</title>
   <link rel="stylesheet" href="../styles.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
-  <link rel="stylesheet" href="./admin.css?v=20261121-preview-status-tooltip-1">
+  <link rel="stylesheet" href="./admin.css?v=20261121-admin-filters-tooltip-2">
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -71,6 +71,12 @@
             <div>
               <span class="section-kicker">Content library</span>
               <h2>Your content <span id="listCount">0</span></h2>
+            </div>
+            <div class="admin-heading-actions">
+              <button id="openFilters" class="admin-filter-trigger" type="button" aria-label="Filter content" title="Filter content">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4"/></svg>
+                <span>Filter</span>
+              </button>
             </div>
             <div id="newEntryActions" class="admin-create-actions">
               <button id="newEvent" class="admin-small-button" type="button">New event +</button>
@@ -173,9 +179,38 @@
       </a>
       <p>Office Impact Community website administration.</p>
       <div class="footer-links"><a href="../">Public website &nearr;</a></div>
-      <small class="admin-build-info">Admin UI v2026.11.21.2 · Updated 21 Nov 2026, 05:20 CET</small>
+      <small class="admin-build-info">Admin UI v2026.11.21.3 · Updated 21 Nov 2026</small>
     </div>
   </footer>
+  <dialog id="filterDialog" class="admin-filter-dialog" aria-labelledby="filterDialogTitle">
+    <div class="admin-filter-dialog__heading">
+      <div><span class="section-kicker">Content library</span><h2 id="filterDialogTitle">Filter content</h2></div>
+      <button id="closeFilters" class="admin-text-button" type="button" aria-label="Close filters">&times;</button>
+    </div>
+    <div class="admin-filter-fields">
+      <label>Status
+        <select id="filterStatus">
+          <option value="all">All statuses</option>
+          <option value="live">Published · Live</option>
+          <option value="changes">Live with draft changes</option>
+          <option value="draft">Draft only</option>
+        </select>
+      </label>
+      <fieldset class="admin-filter-date">
+        <legend>Date</legend>
+        <label>From <input id="filterDateFrom" type="date"></label>
+        <label>To <input id="filterDateTo" type="date"></label>
+        <small>Uses event date, story publication date, or creation date for team members.</small>
+      </fieldset>
+      <label>Created by
+        <select id="filterCreator"><option value="all">Anyone</option></select>
+      </label>
+    </div>
+    <div class="admin-filter-actions">
+      <button id="clearFilters" class="admin-small-button" type="button">Clear filters</button>
+      <button id="applyFilters" class="button button--dark" type="button">Apply filters</button>
+    </div>
+  </dialog>
   <dialog class="admin-image-editor" id="imageCropDialog" aria-labelledby="imageCropTitle">
     <div class="admin-image-editor__header">
       <div><span class="section-kicker">Image editor</span><h2 id="imageCropTitle">Adjust image</h2></div>
@@ -196,6 +231,6 @@
     </div>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js" defer></script>
-  <script type="module" src="./admin.js?v=20261121-preview-status-tooltip-1"></script>
+  <script type="module" src="./admin.js?v=20261121-admin-filters-tooltip-2"></script>
 </body>
 </html>

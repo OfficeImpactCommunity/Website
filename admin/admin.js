@@ -12,6 +12,7 @@ const state = {
   people: [],
   accessRows: [],
   current: null,
+  filters: { status: "all", from: "", to: "", creator: "all" },
 };
 
 const ENTRY_FIELDS = {
@@ -110,10 +111,10 @@ async function checkAccess(user) {
 async function loadRecords() {
   const [entriesResult, peopleResult] = await Promise.all([
     supabase.from("content_items")
-      .select("id, content_key, stage, kind, data, updated_at, published_at")
+      .select("*")
       .order("updated_at", { ascending: false }),
     supabase.from("people")
-      .select("id, person_key, stage, data, updated_at, published_at")
+      .select("*")
       .order("updated_at", { ascending: false }),
   ]);
   if (entriesResult.error) throw entriesResult.error;
@@ -601,12 +602,59 @@ function setupAdminPreviewDialog() {
   });
 }
 
+function recordCreator(group) {
+  const row = group.draft || group.live || {};
+  const data = row.data || {};
+  return row.created_by_email || row.creator_email || data.created_by_email || data.created_by || row.created_by || row.user_email || row.user_id || data.author || "";
+}
+
+function recordDate(group) {
+  const row = group.draft || group.live || {};
+  const data = row.data || {};
+  return data.event_date || data.publication_date || row.created_at || row.updated_at || row.published_at || "";
+}
+
+function filteredGroups() {
+  const { status, from, to, creator } = state.filters;
+  return groupedRows().filter((group) => {
+    const changed = hasUnpublishedChanges(group);
+    const groupStatus = group.live ? (changed ? "changes" : "live") : "draft";
+    if (status !== "all" && status !== groupStatus) return false;
+    const date = String(recordDate(group)).slice(0, 10);
+    if (from && (!date || date < from)) return false;
+    if (to && (!date || date > to)) return false;
+    if (creator !== "all" && String(recordCreator(group)) !== creator) return false;
+    return true;
+  });
+}
+
+function renderFilterOptions() {
+  const select = $("#filterCreator");
+  if (!select) return;
+  const creators = [...new Set(groupedRows().map(recordCreator).filter(Boolean))].sort((a,b) => String(a).localeCompare(String(b)));
+  const current = state.filters.creator;
+  select.innerHTML = '<option value="all">Anyone</option>' + creators.map((value) =>
+    `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`
+  ).join("");
+  select.value = creators.includes(current) ? current : "all";
+  if (select.value !== current) state.filters.creator = "all";
+  $("#filterStatus").value = state.filters.status;
+  $("#filterDateFrom").value = state.filters.from;
+  $("#filterDateTo").value = state.filters.to;
+  const active = state.filters.status !== "all" || state.filters.from || state.filters.to || state.filters.creator !== "all";
+  $("#openFilters")?.classList.toggle("has-active-filters", Boolean(active));
+}
+
 function renderList() {
   const container = $("#recordList");
-  const groups = groupedRows();
+  const groups = filteredGroups();
   $("#listCount").textContent = String(groups.length);
+  renderFilterOptions();
   if (!groups.length) {
-    container.innerHTML = '<div class="admin-empty">No items yet. Create your first draft.</div>';
+    container.innerHTML = groupedRows().length
+      ? '<div class="admin-empty">No items match these filters. Try changing or clearing them.</div>'
+      : '<div class="admin-empty">No items yet. Create your first draft.</div>';
+    renderContentPreview();
     return;
   }
   container.innerHTML = groups.map((group) => {
@@ -1319,6 +1367,27 @@ async function init() {
     const button = event.target.closest("[data-remove-image]");
     if (button) removeImage(button);
   });
+  $("#openFilters").addEventListener("click", () => $("#filterDialog").showModal());
+  $("#closeFilters").addEventListener("click", () => $("#filterDialog").close());
+  $("#applyFilters").addEventListener("click", () => {
+    state.filters = {
+      status: $("#filterStatus").value,
+      from: $("#filterDateFrom").value,
+      to: $("#filterDateTo").value,
+      creator: $("#filterCreator").value,
+    };
+    $("#filterDialog").close();
+    renderList();
+  });
+  $("#clearFilters").addEventListener("click", () => {
+    state.filters = { status: "all", from: "", to: "", creator: "all" };
+    renderFilterOptions();
+    renderList();
+  });
+  $("#filterDialog").addEventListener("click", (event) => {
+    if (event.target === $("#filterDialog")) $("#filterDialog").close();
+  });
+
   $("#imageCropDialog").addEventListener("click", (event) => {
     const action = event.target.closest("[data-crop-action]")?.dataset.cropAction;
     if (!action || !imageCropper) return;
