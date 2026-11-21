@@ -202,7 +202,7 @@ function renderPreviewControls(group, kind) {
   return `
     <div class="admin-preview-controls${kind === "person" ? " admin-preview-controls--person" : ""}">
       <div class="admin-preview-controls__status">${previewStatusBadges(group)}</div>
-      <p class="admin-preview-card__note">${escapeHtml(status.note)}</p>
+      <span class="admin-preview-card__note" role="tooltip">${escapeHtml(status.note)}</span>
       <div class="admin-preview-controls__actions">
         <button class="admin-small-button" type="button" data-preview-edit-key="${escapeHtml(group.key)}">Edit</button>
         <button class="admin-small-button admin-preview-detail-button" type="button" data-preview-detail-key="${escapeHtml(group.key)}" data-preview-detail-kind="${kind}">View details</button>
